@@ -1,0 +1,38 @@
+export const appConfig = {
+  name: "白黒つけない会議",
+  roomName: "おとなの恋鯖 / 夜の雑談ステージ",
+  communityName: "おとなの恋鯖",
+  speakerName: "今話している人",
+  speakerAvatarInitial: "話",
+  maxSpeakers: 5,
+  speakerPalette: ["#47b8ff", "#8f7cff", "#f3d26f", "#ff6b9a", "#7dd3fc"],
+  realtimeStatusLabel: "ローカル試作中",
+  access: {
+    hostKey: "host-demo",
+    speakerKey: "speaker-demo",
+    hostUnlockedByDefault: true,
+    speakerUnlockedByDefault: true,
+    speakerControlEnabledByDefault: true,
+  },
+  meter: {
+    startAngle: 165,
+    endAngle: 375,
+    centerX: 260,
+    centerY: 260,
+    radius: 190,
+    speakerRadiusOffsets: [-24, -12, 0, 12, 24],
+    animationMs: 300,
+  },
+  sound: {
+    enabledByDefault: true,
+    tickStep: 5,
+    minIntervalMs: 58,
+    volume: 0.028,
+  },
+  colors: {
+    left: "#47b8ff",
+    middle: "#f3d26f",
+    right: "#ff6b9a",
+    violet: "#8f7cff",
+  },
+} as const;
