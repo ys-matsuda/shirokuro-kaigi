@@ -241,8 +241,8 @@ export function HostControls({
                 </button>
               </div>
 
-              <div className="grid grid-cols-[1fr_72px] gap-2">
-                <label className="grid gap-1 text-xs font-bold text-slate-400">
+              <div className="grid grid-cols-[minmax(0,1fr)_72px] gap-2">
+                <label className="grid min-w-0 gap-1 text-xs font-bold text-slate-400">
                   表示名
                   <input
                     value={speaker.name}
@@ -251,11 +251,11 @@ export function HostControls({
                       updateSpeaker(speaker.id, { name: event.target.value })
                     }
                     maxLength={18}
-                    className="min-h-10 rounded-lg border border-white/10 bg-slate-950/70 px-3 text-sm font-bold text-white outline-none transition focus:border-cyan-200/50 disabled:cursor-not-allowed"
+                    className="min-h-10 min-w-0 rounded-lg border border-white/10 bg-slate-950/70 px-3 text-sm font-bold text-white outline-none transition focus:border-cyan-200/50 disabled:cursor-not-allowed"
                   />
                 </label>
 
-                <label className="grid gap-1 text-xs font-bold text-slate-400">
+                <label className="grid min-w-0 gap-1 text-xs font-bold text-slate-400">
                   丸文字
                   <input
                     value={speaker.initial}
@@ -266,7 +266,7 @@ export function HostControls({
                       })
                     }
                     maxLength={2}
-                    className="min-h-10 rounded-lg border border-white/10 bg-slate-950/70 px-3 text-center text-sm font-black text-white outline-none transition focus:border-cyan-200/50 disabled:cursor-not-allowed"
+                    className="min-h-10 w-full min-w-0 rounded-lg border border-white/10 bg-slate-950/70 px-3 text-center text-sm font-black text-white outline-none transition focus:border-cyan-200/50 disabled:cursor-not-allowed"
                   />
                 </label>
               </div>

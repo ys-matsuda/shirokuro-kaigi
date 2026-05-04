@@ -14,6 +14,7 @@ type AudienceVotePanelProps = {
   rightLabel: string;
   onVote: (value: number) => void;
   onResetVotes: () => void;
+  showReset?: boolean;
 };
 
 const voteValues = Array.from({ length: 11 }, (_, index) => index * 10);
@@ -25,6 +26,7 @@ export function AudienceVotePanel({
   rightLabel,
   onVote,
   onResetVotes,
+  showReset = true,
 }: AudienceVotePanelProps) {
   return (
     <div className="grid gap-4">
@@ -38,15 +40,17 @@ export function AudienceVotePanel({
             </p>
             <h2 className="mt-1 text-2xl font-black text-white">視聴者として置く</h2>
           </div>
-          <button
-            type="button"
-            onClick={onResetVotes}
-            className="inline-flex min-h-10 items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-4 text-sm font-bold text-slate-100 transition hover:border-white/20 hover:bg-white/[0.1]"
-            title="視聴者投票を空にする"
-          >
-            <UserRoundCheck aria-hidden="true" className="size-4" />
-            空にする
-          </button>
+          {showReset ? (
+            <button
+              type="button"
+              onClick={onResetVotes}
+              className="inline-flex min-h-10 items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-4 text-sm font-bold text-slate-100 transition hover:border-white/20 hover:bg-white/[0.1]"
+              title="視聴者投票を空にする"
+            >
+              <UserRoundCheck aria-hidden="true" className="size-4" />
+              空にする
+            </button>
+          ) : null}
         </div>
 
         <div className="mb-3 grid grid-cols-[1fr_auto_1fr] text-sm font-bold">

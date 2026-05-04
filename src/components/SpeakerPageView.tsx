@@ -130,6 +130,12 @@ export function SpeakerPageView() {
             >
               全部入り
             </Link>
+            <Link
+              href="/audience"
+              className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-slate-300 transition hover:border-white/20 hover:bg-white/[0.08]"
+            >
+              視聴者
+            </Link>
           </nav>
         </header>
 
