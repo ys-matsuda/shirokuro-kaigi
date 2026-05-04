@@ -260,7 +260,7 @@ export function BroadcastStage({
                       <span className="ml-1 text-[0.42em] text-slate-400">人</span>
                     </p>
                     <p className="mt-1 text-[var(--stage-topic-label)] font-black text-cyan-100">
-                      {formatAudienceMood(audienceVotes)}
+                      {formatAudienceMood(audienceVotes, leftLabel, rightLabel)}
                     </p>
                   </div>
                   <div className="text-right">

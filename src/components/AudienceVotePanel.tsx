@@ -30,7 +30,11 @@ export function AudienceVotePanel({
 }: AudienceVotePanelProps) {
   return (
     <div className="grid gap-4">
-      <AudienceDistribution votes={votes} />
+      <AudienceDistribution
+        votes={votes}
+        leftLabel={leftLabel}
+        rightLabel={rightLabel}
+      />
 
       <section className="rounded-lg border border-white/10 bg-[linear-gradient(145deg,rgba(255,255,255,0.078),rgba(255,255,255,0.044))] p-5 shadow-panel backdrop-blur-xl">
         <div className="mb-4 flex items-center justify-between gap-3">

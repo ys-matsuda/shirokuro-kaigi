@@ -5,17 +5,23 @@ import { formatAudienceMood, formatSoftAverage } from "@/utils/formatOpinionLabe
 
 type AudienceDistributionProps = {
   votes: AudienceVote[];
+  leftLabel: string;
+  rightLabel: string;
 };
 
 const buckets = Array.from({ length: 11 }, (_, index) => index * 10);
 
-export function AudienceDistribution({ votes }: AudienceDistributionProps) {
+export function AudienceDistribution({
+  votes,
+  leftLabel,
+  rightLabel,
+}: AudienceDistributionProps) {
   const counts = buckets.map(
     (bucket) => votes.filter((vote) => vote.value === bucket).length,
   );
   const maxCount = Math.max(1, ...counts);
   const total = votes.length;
-  const mood = formatAudienceMood(votes);
+  const mood = formatAudienceMood(votes, leftLabel, rightLabel);
   const softAverage = formatSoftAverage(votes);
 
   return (

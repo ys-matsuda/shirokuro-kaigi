@@ -1,5 +1,5 @@
-import { MeetingPrototype } from "@/components/MeetingPrototype";
+import { EntryPageView } from "@/components/EntryPageView";
 
 export default function Home() {
-  return <MeetingPrototype />;
+  return <EntryPageView />;
 }

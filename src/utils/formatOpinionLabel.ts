@@ -10,23 +10,22 @@ export function formatOpinionLabel(value: number) {
   return "かなり右寄り";
 }
 
-export function formatAudienceMood(votes: AudienceVote[]) {
+export function formatAudienceMood(
+  votes: AudienceVote[],
+  leftLabel = "左",
+  rightLabel = "右",
+) {
   if (!votes.length) return "まだ空気を待っている";
 
   const total = votes.length;
-  const middle = votes.filter((vote) => vote.value >= 40 && vote.value <= 60).length;
-  const left = votes.filter((vote) => vote.value <= 30).length;
-  const right = votes.filter((vote) => vote.value >= 70).length;
   const average = votes.reduce((sum, vote) => sum + vote.value, 0) / total;
+  const roundedAverage = Math.round(average);
 
-  if (left / total > 0.28 && right / total > 0.28 && middle / total < 0.36) {
-    return "左右にふわっと割れている";
-  }
-
-  if (middle / total >= 0.42) return "真ん中で揺れている";
-  if (average < 42) return "やや左寄りの空気";
-  if (average > 58) return "やや右寄りの空気";
-  return "ほどよく散らばっている";
+  if (roundedAverage === 100) return `みんな${rightLabel}`;
+  if (roundedAverage >= 61) return `やや${rightLabel}寄りの空気`;
+  if (roundedAverage >= 40) return "真ん中で揺れている";
+  if (roundedAverage > 0) return `やや${leftLabel}寄りの空気`;
+  return `みんな${leftLabel}`;
 }
 
 export function formatSoftAverage(votes: AudienceVote[]) {
