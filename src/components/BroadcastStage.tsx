@@ -23,6 +23,7 @@ type BroadcastStageProps = {
   activeSpeakerId: string;
   audienceVotes: AudienceVote[];
   onActiveSpeakerChange: (speakerId: string) => void;
+  mode?: "embedded" | "share";
 };
 
 const viewBox = {
@@ -41,6 +42,7 @@ export function BroadcastStage({
   activeSpeakerId,
   audienceVotes,
   onActiveSpeakerChange,
+  mode = "embedded",
 }: BroadcastStageProps) {
   const activeSpeaker = speakers.find((speaker) => speaker.id === activeSpeakerId);
   const activeValue = activeSpeaker?.value ?? 50;
@@ -55,8 +57,13 @@ export function BroadcastStage({
     fontSize: "clamp(1.38rem, 2.7cqw, 2.7rem)",
     lineHeight: 1.04,
   };
+  const isShareMode = mode === "share";
+  const shareBadgeClassName =
+    "inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.07] px-[clamp(0.75rem,1.2cqw,1.45rem)] py-[clamp(0.36rem,0.55cqw,0.72rem)] text-[var(--stage-side-title)] font-black text-slate-200";
   const stageStyle = {
-    width: "min(100%, 1280px, calc(177.78vh - 235px))",
+    width: isShareMode
+      ? "min(calc(100vw - 1rem), calc(177.78vh - 1rem))"
+      : "min(100%, 1280px, calc(177.78vh - 235px))",
     "--stage-pad": "clamp(1rem, 2.05cqw, 2.55rem)",
     "--stage-gap": "clamp(0.75rem, 1.25cqw, 1.6rem)",
     "--stage-room": "clamp(0.66rem, 1.02cqw, 1.24rem)",
@@ -90,10 +97,25 @@ export function BroadcastStage({
                 {appConfig.name}
               </h1>
             </div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.07] px-[clamp(0.75rem,1.2cqw,1.45rem)] py-[clamp(0.36rem,0.55cqw,0.72rem)] text-[var(--stage-side-title)] font-black text-slate-200">
-              <span className="size-2 rounded-full bg-emerald-300 shadow-[0_0_14px_rgba(110,231,183,0.8)]" />
-              16:9 SHARE
-            </div>
+            {isShareMode ? (
+              <div className={shareBadgeClassName}>
+                <span className="size-2 rounded-full bg-emerald-300 shadow-[0_0_14px_rgba(110,231,183,0.8)]" />
+                16:9 SHARE
+              </div>
+            ) : (
+              <a
+                href="/stage"
+                target="_blank"
+                rel="noreferrer"
+                className={cn(
+                  shareBadgeClassName,
+                  "transition hover:border-white/20 hover:bg-white/[0.1]",
+                )}
+              >
+                <span className="size-2 rounded-full bg-emerald-300 shadow-[0_0_14px_rgba(110,231,183,0.8)]" />
+                16:9 SHARE
+              </a>
+            )}
           </div>
 
           <div className="mt-[var(--stage-gap)] grid min-h-0 flex-1 gap-[var(--stage-gap)] grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(210px,0.36fr)]">

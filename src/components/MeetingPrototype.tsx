@@ -4,8 +4,14 @@ import { useMemo, useState } from "react";
 
 import { appConfig } from "@/config/app";
 import { initialMeetingState } from "@/data/initialState";
+import { useSyncedMeetingState } from "@/hooks/useSyncedMeetingState";
 import { useTickSound } from "@/hooks/useTickSound";
-import type { AudienceVote, Role, SpeakerMeterParticipant } from "@/types/meeting";
+import type {
+  AudienceVote,
+  MeetingState,
+  Role,
+  SpeakerMeterParticipant,
+} from "@/types/meeting";
 
 import { AccessPanel, type AccessState } from "./AccessPanel";
 import { AppHeader } from "./AppHeader";
@@ -24,25 +30,22 @@ const roleCopy: Record<Role, string> = {
 };
 
 export function MeetingPrototype() {
-  const [topic, setTopic] = useState(initialMeetingState.topic);
-  const [leftLabel, setLeftLabel] = useState(initialMeetingState.leftLabel);
-  const [rightLabel, setRightLabel] = useState(initialMeetingState.rightLabel);
-  const [currentRole, setCurrentRole] = useState<Role>(initialMeetingState.currentRole);
+  const [meetingState, setMeetingState] = useSyncedMeetingState();
+  const {
+    topic,
+    leftLabel,
+    rightLabel,
+    currentRole,
+    soundEnabled,
+    speakers,
+    activeSpeakerId,
+    audienceVotes,
+  } = meetingState;
   const [access, setAccess] = useState<AccessState>({
     hostUnlocked: appConfig.access.hostUnlockedByDefault,
     speakerUnlocked: appConfig.access.speakerUnlockedByDefault,
     speakerControlEnabled: appConfig.access.speakerControlEnabledByDefault,
   });
-  const [soundEnabled, setSoundEnabled] = useState(initialMeetingState.soundEnabled);
-  const [speakers, setSpeakers] = useState<SpeakerMeterParticipant[]>(
-    initialMeetingState.speakers,
-  );
-  const [activeSpeakerId, setActiveSpeakerId] = useState(
-    initialMeetingState.activeSpeakerId,
-  );
-  const [audienceVotes, setAudienceVotes] = useState<AudienceVote[]>(
-    initialMeetingState.audienceVotes,
-  );
   const [selectedAudienceValue, setSelectedAudienceValue] = useState<number | null>(
     null,
   );
@@ -78,6 +81,40 @@ export function MeetingPrototype() {
         ? "スピーカーキーが必要です"
         : "スピーカー操作が一時停止中です";
 
+  function updateMeetingState(updater: (currentState: MeetingState) => MeetingState) {
+    setMeetingState(updater);
+  }
+
+  function setCurrentRole(role: Role) {
+    updateMeetingState((currentState) => ({ ...currentState, currentRole: role }));
+  }
+
+  function setSoundEnabled(soundEnabled: boolean) {
+    updateMeetingState((currentState) => ({ ...currentState, soundEnabled }));
+  }
+
+  function setActiveSpeakerId(activeSpeakerId: string) {
+    updateMeetingState((currentState) => ({ ...currentState, activeSpeakerId }));
+  }
+
+  function setAudienceVotes(
+    updater: (currentVotes: AudienceVote[]) => AudienceVote[],
+  ) {
+    updateMeetingState((currentState) => ({
+      ...currentState,
+      audienceVotes: updater(currentState.audienceVotes),
+    }));
+  }
+
+  function setSpeakers(
+    updater: (currentSpeakers: SpeakerMeterParticipant[]) => SpeakerMeterParticipant[],
+  ) {
+    updateMeetingState((currentState) => ({
+      ...currentState,
+      speakers: updater(currentState.speakers),
+    }));
+  }
+
   function handleAccessChange(nextAccess: AccessState) {
     setAccess(nextAccess);
 
@@ -109,11 +146,15 @@ export function MeetingPrototype() {
 
   function updateSpeakers(nextSpeakers: SpeakerMeterParticipant[]) {
     const safeSpeakers = nextSpeakers.slice(0, appConfig.maxSpeakers);
-    setSpeakers(safeSpeakers);
-
-    if (!safeSpeakers.some((speaker) => speaker.id === activeSpeakerId)) {
-      setActiveSpeakerId(safeSpeakers[0]?.id ?? initialMeetingState.activeSpeakerId);
-    }
+    updateMeetingState((currentState) => ({
+      ...currentState,
+      speakers: safeSpeakers,
+      activeSpeakerId: safeSpeakers.some(
+        (speaker) => speaker.id === currentState.activeSpeakerId,
+      )
+        ? currentState.activeSpeakerId
+        : safeSpeakers[0]?.id ?? initialMeetingState.activeSpeakerId,
+    }));
   }
 
   function handleAudienceVote(value: number) {
@@ -135,7 +176,7 @@ export function MeetingPrototype() {
 
   function resetAudienceVotes() {
     setSelectedAudienceValue(null);
-    setAudienceVotes([]);
+    updateMeetingState((currentState) => ({ ...currentState, audienceVotes: [] }));
   }
 
   function resetSpeakerMeter() {
@@ -228,9 +269,12 @@ export function MeetingPrototype() {
                 disabled={!canUseHostControls}
                 disabledReason={!canUseHostControls ? hostDisabledReason : undefined}
                 onUpdateTopic={(next) => {
-                  setTopic(next.topic);
-                  setLeftLabel(next.leftLabel);
-                  setRightLabel(next.rightLabel);
+                  updateMeetingState((currentState) => ({
+                    ...currentState,
+                    topic: next.topic,
+                    leftLabel: next.leftLabel,
+                    rightLabel: next.rightLabel,
+                  }));
                 }}
                 onSpeakersChange={updateSpeakers}
                 onActiveSpeakerChange={setActiveSpeakerId}
