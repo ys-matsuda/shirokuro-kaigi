@@ -52,29 +52,27 @@ export function BroadcastStage({
   );
   const maxCount = Math.max(1, ...counts);
   const topicTextStyle: CSSProperties = {
-    fontSize: "clamp(1.38rem, 2.7vw, 2.7rem)",
+    fontSize: "clamp(1.38rem, 2.7cqw, 2.7rem)",
     lineHeight: 1.04,
   };
   const stageStyle = {
-    width: "min(100%, 1280px, calc((100vh - 132px) * 16 / 9))",
-    "--stage-pad": "clamp(1rem, 2.05vw, 2.55rem)",
-    "--stage-gap": "clamp(0.75rem, 1.25vw, 1.6rem)",
-    "--stage-room": "clamp(0.66rem, 1.02vw, 1.24rem)",
-    "--stage-title": "clamp(0.625rem, 1.125vw, 1.375rem)",
-    "--stage-topic-label": "clamp(0.72rem, 1.08vw, 1.32rem)",
-    "--stage-current-name": "clamp(0.72rem, 1.02vw, 1.24rem)",
-    "--stage-current-value": "clamp(3.75rem, 6.65vw, 8.2rem)",
-    "--stage-side-title": "clamp(0.68rem, 1.02vw, 1.24rem)",
-    "--stage-side-number": "clamp(1.8rem, 3.45vw, 4.2rem)",
-    "--stage-avg-number": "clamp(1.55rem, 2.85vw, 3.5rem)",
-    "--stage-side-card-pad": "clamp(0.75rem, 1.08vw, 1.35rem)",
-    "--stage-histogram": "clamp(4.9rem, 6.55vw, 8rem)",
-    "--stage-list-row": "clamp(2.5rem, 3.35vw, 4.05rem)",
+    width: "min(100%, 1280px, calc(177.78vh - 235px))",
+    "--stage-pad": "clamp(1rem, 2.05cqw, 2.55rem)",
+    "--stage-gap": "clamp(0.75rem, 1.25cqw, 1.6rem)",
+    "--stage-room": "clamp(0.66rem, 1.02cqw, 1.24rem)",
+    "--stage-title": "clamp(0.625rem, 1.125cqw, 1.375rem)",
+    "--stage-topic-label": "clamp(0.72rem, 1.08cqw, 1.32rem)",
+    "--stage-side-title": "clamp(0.68rem, 1.02cqw, 1.24rem)",
+    "--stage-side-number": "clamp(1.8rem, 3.45cqw, 4.2rem)",
+    "--stage-avg-number": "clamp(1.55rem, 2.85cqw, 3.5rem)",
+    "--stage-side-card-pad": "clamp(0.75rem, 1.08cqw, 1.35rem)",
+    "--stage-histogram": "clamp(4.9rem, 6.55cqw, 8rem)",
+    "--stage-list-row": "clamp(2.5rem, 3.35cqw, 4.05rem)",
   } as CSSProperties & Record<string, string>;
 
   return (
     <section
-      className="mx-auto"
+      className="mx-auto [container-type:inline-size]"
       style={stageStyle}
       aria-label="配信用16:9ステージ"
     >
@@ -92,7 +90,7 @@ export function BroadcastStage({
                 {appConfig.name}
               </h1>
             </div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.07] px-[clamp(0.75rem,1.2vw,1.45rem)] py-[clamp(0.36rem,0.55vw,0.72rem)] text-[var(--stage-side-title)] font-black text-slate-200">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.07] px-[clamp(0.75rem,1.2cqw,1.45rem)] py-[clamp(0.36rem,0.55cqw,0.72rem)] text-[var(--stage-side-title)] font-black text-slate-200">
               <span className="size-2 rounded-full bg-emerald-300 shadow-[0_0_14px_rgba(110,231,183,0.8)]" />
               16:9 SHARE
             </div>
@@ -274,7 +272,7 @@ export function BroadcastStage({
                 </div>
               </div>
 
-              <div className="grid gap-[clamp(0.5rem,0.75vw,0.9rem)]">
+              <div className="grid gap-[clamp(0.5rem,0.75cqw,0.9rem)]">
                 {visibleSpeakers.map((speaker) => {
                   const isActive = speaker.id === activeSpeakerId;
 
@@ -284,14 +282,14 @@ export function BroadcastStage({
                       type="button"
                       onClick={() => onActiveSpeakerChange(speaker.id)}
                       className={cn(
-                        "grid min-h-[var(--stage-list-row)] grid-cols-[auto_1fr_auto] items-center gap-2 rounded-lg border px-[clamp(0.75rem,1vw,1.25rem)] text-left transition",
+                        "grid min-h-[var(--stage-list-row)] grid-cols-[auto_1fr_auto] items-center gap-2 rounded-lg border px-[clamp(0.75rem,1cqw,1.25rem)] text-left transition",
                         isActive
                           ? "border-white bg-white text-slate-950"
                           : "border-white/10 bg-white/[0.05] text-slate-200 hover:bg-white/[0.09]",
                       )}
                     >
                       <span
-                        className="grid size-[clamp(1.5rem,2.1vw,2.4rem)] place-items-center rounded-full text-[clamp(0.62rem,0.8vw,0.9rem)] font-black text-slate-950"
+                        className="grid size-[clamp(1.5rem,2.1cqw,2.4rem)] place-items-center rounded-full text-[clamp(0.62rem,0.8cqw,0.9rem)] font-black text-slate-950"
                         style={{ backgroundColor: speaker.color }}
                       >
                         {speaker.initial}
