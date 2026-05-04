@@ -4,7 +4,7 @@ export function formatOpinionLabel(value: number) {
   if (value <= 12) return "かなり左寄り";
   if (value <= 32) return "左の気持ちが強め";
   if (value <= 44) return "少し左に揺れている";
-  if (value < 56) return "真ん中付近";
+  if (value < 56) return "保留のまんなか";
   if (value < 69) return "少し右に揺れている";
   if (value < 89) return "右の気持ちが強め";
   return "かなり右寄り";
@@ -23,7 +23,7 @@ export function formatAudienceMood(votes: AudienceVote[]) {
     return "左右にふわっと割れている";
   }
 
-  if (middle / total >= 0.42) return "真ん中多め";
+  if (middle / total >= 0.42) return "真ん中で揺れている";
   if (average < 42) return "やや左寄りの空気";
   if (average > 58) return "やや右寄りの空気";
   return "ほどよく散らばっている";

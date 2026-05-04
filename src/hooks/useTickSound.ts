@@ -72,25 +72,41 @@ export function useTickSound({
       lastPlayedAtRef.current = now;
 
       const startedAt = context.currentTime;
-      const oscillator = context.createOscillator();
+      const clickOscillator = context.createOscillator();
+      const bodyOscillator = context.createOscillator();
       const gain = context.createGain();
+      const bodyGain = context.createGain();
       const filter = context.createBiquadFilter();
 
-      oscillator.type = "triangle";
-      oscillator.frequency.setValueAtTime(230 + (bucket % 4) * 18, startedAt);
-      filter.type = "lowpass";
-      filter.frequency.setValueAtTime(920, startedAt);
+      clickOscillator.type = "triangle";
+      clickOscillator.frequency.setValueAtTime(190 + (bucket % 5) * 12, startedAt);
+      clickOscillator.frequency.exponentialRampToValueAtTime(145, startedAt + 0.045);
+
+      bodyOscillator.type = "sine";
+      bodyOscillator.frequency.setValueAtTime(86 + (bucket % 3) * 6, startedAt);
+
+      filter.type = "bandpass";
+      filter.frequency.setValueAtTime(720, startedAt);
+      filter.Q.setValueAtTime(0.9, startedAt);
 
       gain.gain.setValueAtTime(0.0001, startedAt);
-      gain.gain.exponentialRampToValueAtTime(volume, startedAt + 0.006);
-      gain.gain.exponentialRampToValueAtTime(0.0001, startedAt + 0.045);
+      gain.gain.exponentialRampToValueAtTime(volume, startedAt + 0.007);
+      gain.gain.exponentialRampToValueAtTime(0.0001, startedAt + 0.056);
 
-      oscillator.connect(filter);
+      bodyGain.gain.setValueAtTime(0.0001, startedAt);
+      bodyGain.gain.exponentialRampToValueAtTime(volume * 0.32, startedAt + 0.01);
+      bodyGain.gain.exponentialRampToValueAtTime(0.0001, startedAt + 0.075);
+
+      clickOscillator.connect(filter);
       filter.connect(gain);
       gain.connect(context.destination);
+      bodyOscillator.connect(bodyGain);
+      bodyGain.connect(context.destination);
 
-      oscillator.start(startedAt);
-      oscillator.stop(startedAt + 0.05);
+      clickOscillator.start(startedAt);
+      clickOscillator.stop(startedAt + 0.06);
+      bodyOscillator.start(startedAt);
+      bodyOscillator.stop(startedAt + 0.08);
     },
     [getAudioContext, minIntervalMs, step, volume],
   );

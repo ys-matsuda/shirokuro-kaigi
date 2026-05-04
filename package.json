@@ -7,7 +7,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "checkpoint": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/checkpoint.ps1",
+    "checkpoints": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/checkpoints.ps1",
+    "restore-checkpoint": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/restore-checkpoint.ps1"
   },
   "engines": {
     "node": ">=20.9.0"

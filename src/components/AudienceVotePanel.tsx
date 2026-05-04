@@ -30,18 +30,18 @@ export function AudienceVotePanel({
     <div className="grid gap-4">
       <AudienceDistribution votes={votes} />
 
-      <section className="rounded-lg border border-white/10 bg-white/[0.065] p-5 shadow-panel backdrop-blur-xl">
+      <section className="rounded-lg border border-white/10 bg-[linear-gradient(145deg,rgba(255,255,255,0.078),rgba(255,255,255,0.044))] p-5 shadow-panel backdrop-blur-xl">
         <div className="mb-4 flex items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-bold tracking-[0.22em] text-cyan-100/60">
+            <p className="text-xs font-black tracking-[0.22em] text-cyan-100/60">
               AUDIENCE
             </p>
-            <h2 className="mt-1 text-xl font-black text-white">視聴者として置く</h2>
+            <h2 className="mt-1 text-2xl font-black text-white">視聴者として置く</h2>
           </div>
           <button
             type="button"
             onClick={onResetVotes}
-            className="inline-flex min-h-10 items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-4 text-sm font-bold text-slate-100 transition hover:bg-white/[0.1]"
+            className="inline-flex min-h-10 items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-4 text-sm font-bold text-slate-100 transition hover:border-white/20 hover:bg-white/[0.1]"
             title="視聴者投票を空にする"
           >
             <UserRoundCheck aria-hidden="true" className="size-4" />
@@ -69,8 +69,8 @@ export function AudienceVotePanel({
                   "min-h-12 rounded-lg border text-base font-black transition",
                   "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300",
                   selected
-                    ? "border-white bg-white text-slate-950 shadow-[0_0_26px_rgba(255,255,255,0.2)]"
-                    : "border-white/10 bg-slate-950/[0.58] text-slate-100 hover:bg-white/[0.09]",
+                    ? "border-white bg-[linear-gradient(180deg,#ffffff,#dbeafe)] text-slate-950 shadow-[0_0_26px_rgba(255,255,255,0.22)]"
+                    : "border-white/10 bg-slate-950/[0.58] text-slate-100 hover:border-white/20 hover:bg-white/[0.09]",
                 )}
               >
                 {voteValue}

@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { Maximize2, Minimize2 } from "lucide-react";
+import { useMemo, useState } from "react";
 
 import { appConfig } from "@/config/app";
 import { initialMeetingState } from "@/data/initialState";
@@ -47,7 +46,6 @@ export function MeetingPrototype() {
   const [selectedAudienceValue, setSelectedAudienceValue] = useState<number | null>(
     null,
   );
-  const [presentationMode, setPresentationMode] = useState(false);
 
   const { playTickForValue, primeTickSound } = useTickSound({
     enabled: soundEnabled,
@@ -79,35 +77,6 @@ export function MeetingPrototype() {
       : !access.speakerUnlocked
         ? "スピーカーキーが必要です"
         : "スピーカー操作が一時停止中です";
-
-  useEffect(() => {
-    function handleFullscreenChange() {
-      if (!document.fullscreenElement) {
-        setPresentationMode(false);
-      }
-    }
-
-    document.addEventListener("fullscreenchange", handleFullscreenChange);
-    return () => {
-      document.removeEventListener("fullscreenchange", handleFullscreenChange);
-    };
-  }, []);
-
-  async function enterPresentationMode() {
-    setPresentationMode(true);
-
-    if (!document.fullscreenElement) {
-      await document.documentElement.requestFullscreen?.().catch(() => {});
-    }
-  }
-
-  async function exitPresentationMode() {
-    setPresentationMode(false);
-
-    if (document.fullscreenElement) {
-      await document.exitFullscreen?.().catch(() => {});
-    }
-  }
 
   function handleAccessChange(nextAccess: AccessState) {
     setAccess(nextAccess);
@@ -181,37 +150,10 @@ export function MeetingPrototype() {
     setActiveSpeakerId(initialMeetingState.activeSpeakerId);
   }
 
-  if (presentationMode) {
-    return (
-      <div className="fixed inset-0 z-50 grid place-items-center overflow-hidden bg-black">
-        <BroadcastStage
-          topic={topic}
-          leftLabel={leftLabel}
-          rightLabel={rightLabel}
-          speakers={speakers}
-          activeSpeakerId={activeSpeakerId}
-          audienceVotes={votesWithLocalUser}
-          fullscreen
-          onActiveSpeakerChange={setActiveSpeakerId}
-        />
-
-        <button
-          type="button"
-          onClick={exitPresentationMode}
-          className="absolute right-4 top-4 inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-white/10 bg-black/55 px-4 text-sm font-black text-white opacity-35 backdrop-blur transition hover:opacity-100 focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300"
-          title="配信全画面を終了"
-        >
-          <Minimize2 aria-hidden="true" className="size-4" />
-          終了
-        </button>
-      </div>
-    );
-  }
-
   return (
     <div className="relative min-h-screen overflow-hidden">
-      <div className="pointer-events-none fixed inset-0 bg-[linear-gradient(135deg,#080a13_0%,#0e1220_42%,#160f1f_100%)]" />
-      <div className="pointer-events-none fixed inset-0 bg-[linear-gradient(90deg,rgba(71,184,255,0.08),transparent_28%,rgba(255,107,154,0.08)_78%,transparent)]" />
+      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_18%_12%,rgba(71,184,255,0.16),transparent_30%),radial-gradient(circle_at_82%_18%,rgba(255,107,154,0.13),transparent_30%),linear-gradient(135deg,#070914_0%,#0d1120_44%,#160f1f_100%)]" />
+      <div className="pointer-events-none fixed inset-0 bg-[linear-gradient(90deg,rgba(71,184,255,0.055),transparent_28%,rgba(255,107,154,0.055)_78%,transparent)]" />
       <div className="pointer-events-none fixed inset-0 opacity-[0.18] [background-image:linear-gradient(rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.06)_1px,transparent_1px)] [background-size:42px_42px]" />
 
       <div className="relative z-10">
@@ -225,28 +167,15 @@ export function MeetingPrototype() {
         />
 
         <main className="mx-auto grid w-full max-w-7xl gap-5 px-4 py-5 sm:px-6 lg:px-8">
-          <div className="grid gap-3">
-            <div className="flex justify-end">
-              <button
-                type="button"
-                onClick={enterPresentationMode}
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-cyan-200/20 bg-cyan-200/10 px-4 text-sm font-black text-cyan-50 shadow-[0_0_22px_rgba(71,184,255,0.12)] transition hover:bg-cyan-200/[0.16] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300"
-                title="16:9ステージだけを全画面表示"
-              >
-                <Maximize2 aria-hidden="true" className="size-4" />
-                配信全画面
-              </button>
-            </div>
-            <BroadcastStage
-              topic={topic}
-              leftLabel={leftLabel}
-              rightLabel={rightLabel}
-              speakers={speakers}
-              activeSpeakerId={activeSpeakerId}
-              audienceVotes={votesWithLocalUser}
-              onActiveSpeakerChange={setActiveSpeakerId}
-            />
-          </div>
+          <BroadcastStage
+            topic={topic}
+            leftLabel={leftLabel}
+            rightLabel={rightLabel}
+            speakers={speakers}
+            activeSpeakerId={activeSpeakerId}
+            audienceVotes={votesWithLocalUser}
+            onActiveSpeakerChange={setActiveSpeakerId}
+          />
 
           <div className="grid gap-5 lg:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)]">
             <div className="grid content-start gap-5">

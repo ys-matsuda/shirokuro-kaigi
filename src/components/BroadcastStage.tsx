@@ -23,7 +23,6 @@ type BroadcastStageProps = {
   speakers: SpeakerMeterParticipant[];
   activeSpeakerId: string;
   audienceVotes: AudienceVote[];
-  fullscreen?: boolean;
   onActiveSpeakerChange: (speakerId: string) => void;
 };
 
@@ -35,6 +34,23 @@ const viewBox = {
 const geometry: MeterGeometry = appConfig.meter;
 const buckets = Array.from({ length: 11 }, (_, index) => index * 10);
 
+function arcRangePolylinePoints(
+  fromValue: number,
+  toValue: number,
+  meterGeometry: MeterGeometry,
+  segments = 36,
+) {
+  const points: string[] = [];
+
+  for (let index = 0; index <= segments; index += 1) {
+    const value = fromValue + ((toValue - fromValue) * index) / segments;
+    const point = pointOnMeter(value, meterGeometry);
+    points.push(`${point.x.toFixed(2)},${point.y.toFixed(2)}`);
+  }
+
+  return points.join(" ");
+}
+
 export function BroadcastStage({
   topic,
   leftLabel,
@@ -42,7 +58,6 @@ export function BroadcastStage({
   speakers,
   activeSpeakerId,
   audienceVotes,
-  fullscreen = false,
   onActiveSpeakerChange,
 }: BroadcastStageProps) {
   const activeSpeaker = speakers.find((speaker) => speaker.id === activeSpeakerId);
@@ -50,310 +65,295 @@ export function BroadcastStage({
   const visibleSpeakers = speakers.slice(0, appConfig.maxSpeakers);
   const basePoints = arcPolylinePoints(100, geometry, 136);
   const progressPoints = arcPolylinePoints(activeValue, geometry, 136);
+  const middleRangePoints = arcRangePolylinePoints(43, 57, geometry);
   const counts = buckets.map(
     (bucket) => audienceVotes.filter((vote) => vote.value === bucket).length,
   );
   const maxCount = Math.max(1, ...counts);
+  const topicTextStyle: CSSProperties = {
+    fontSize: "clamp(1.38rem, 2.7vw, 2.7rem)",
+    lineHeight: 1.04,
+  };
   const stageStyle = {
-    width: fullscreen
-      ? "min(100vw, calc(100vh * 16 / 9))"
-      : "min(100%, 1221px, calc((100vh - 132px) * 16 / 9))",
-    "--stage-room": fullscreen
-      ? "clamp(0.86rem, 1.08vw, 1.3rem)"
-      : "clamp(0.72rem, 1.08vw, 0.92rem)",
-    "--stage-title": fullscreen
-      ? "clamp(1.65rem, 2.2vw, 2.75rem)"
-      : "clamp(1.35rem, 2.2vw, 2rem)",
-    "--stage-share": fullscreen
-      ? "clamp(0.78rem, 0.98vw, 1.15rem)"
-      : "clamp(0.68rem, 0.98vw, 0.82rem)",
-    "--stage-topic-label": fullscreen
-      ? "clamp(0.86rem, 1.05vw, 1.25rem)"
-      : "clamp(0.72rem, 1.05vw, 0.92rem)",
-    "--stage-topic": fullscreen
-      ? "clamp(3.7rem, 5.2vw, 6.7rem)"
-      : "clamp(2.8rem, 5.2vw, 4.4rem)",
-    "--stage-current-name": fullscreen
-      ? "clamp(0.8rem, 0.95vw, 1.15rem)"
-      : "clamp(0.68rem, 0.95vw, 0.84rem)",
-    "--stage-current-value": fullscreen
-      ? "clamp(4.25rem, 6.2vw, 7.8rem)"
-      : "clamp(3.5rem, 6.2vw, 5.2rem)",
-    "--stage-side-title": fullscreen
-      ? "clamp(0.8rem, 1vw, 1.18rem)"
-      : "clamp(0.66rem, 1vw, 0.86rem)",
-    "--stage-side-number": fullscreen
-      ? "clamp(2.3rem, 3.25vw, 4rem)"
-      : "clamp(1.9rem, 3.25vw, 2.75rem)",
-    "--stage-avg-number": fullscreen
-      ? "clamp(2rem, 2.75vw, 3.35rem)"
-      : "clamp(1.7rem, 2.75vw, 2.25rem)",
-    "--stage-side-card-pad": fullscreen
-      ? "clamp(0.95rem, 1.08vw, 1.35rem)"
-      : "clamp(0.72rem, 1.08vw, 0.96rem)",
-    "--stage-histogram": fullscreen
-      ? "clamp(5.2rem, 6.7vw, 8.2rem)"
-      : "clamp(4.2rem, 6.7vw, 5.6rem)",
-    "--stage-list-row": fullscreen
-      ? "clamp(2.8rem, 3.2vw, 3.85rem)"
-      : "clamp(2.35rem, 3.2vw, 2.72rem)",
-    "--stage-avatar-active": fullscreen
-      ? "clamp(4rem, 6.15vw, 7.45rem)"
-      : "clamp(4rem, 6.15vw, 4.85rem)",
-    "--stage-avatar": fullscreen
-      ? "clamp(2.75rem, 4.35vw, 5.25rem)"
-      : "clamp(2.75rem, 4.35vw, 3.35rem)",
-    "--stage-avatar-text": fullscreen
-      ? "clamp(1.05rem, 1.55vw, 1.85rem)"
-      : "clamp(1.05rem, 1.55vw, 1.25rem)",
-    "--stage-avatar-badge": fullscreen
-      ? "clamp(0.68rem, 0.9vw, 1.08rem)"
-      : "clamp(0.62rem, 0.9vw, 0.75rem)",
-    "--stage-avatar-badge-offset": fullscreen
-      ? "clamp(1.35rem, 1.85vw, 2.2rem)"
-      : "clamp(1.1rem, 1.85vw, 1.4rem)",
+    width: "min(100%, 1280px, calc((100vh - 132px) * 16 / 9))",
+    "--stage-pad": "clamp(1rem, 2.05vw, 2.55rem)",
+    "--stage-gap": "clamp(0.75rem, 1.25vw, 1.6rem)",
+    "--stage-room": "clamp(0.66rem, 1.02vw, 1.24rem)",
+    "--stage-title": "clamp(0.625rem, 1.125vw, 1.375rem)",
+    "--stage-topic-label": "clamp(0.72rem, 1.08vw, 1.32rem)",
+    "--stage-current-name": "clamp(0.72rem, 1.02vw, 1.24rem)",
+    "--stage-current-value": "clamp(3.75rem, 6.65vw, 8.2rem)",
+    "--stage-side-title": "clamp(0.68rem, 1.02vw, 1.24rem)",
+    "--stage-side-number": "clamp(1.8rem, 3.45vw, 4.2rem)",
+    "--stage-avg-number": "clamp(1.55rem, 2.85vw, 3.5rem)",
+    "--stage-side-card-pad": "clamp(0.75rem, 1.08vw, 1.35rem)",
+    "--stage-histogram": "clamp(4.9rem, 6.55vw, 8rem)",
+    "--stage-list-row": "clamp(2.5rem, 3.35vw, 4.05rem)",
   } as CSSProperties & Record<string, string>;
 
   return (
     <section
-      className={cn("mx-auto", fullscreen && "grid place-items-center")}
+      className="mx-auto"
       style={stageStyle}
       aria-label="配信用16:9ステージ"
     >
-      <div
-        className={cn(
-          "relative aspect-video w-full overflow-hidden border border-white/10 bg-slate-950 shadow-panel",
-          fullscreen ? "rounded-none" : "rounded-lg",
-        )}
-      >
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(71,184,255,0.22),transparent_32%),radial-gradient(circle_at_84%_24%,rgba(255,107,154,0.18),transparent_30%),linear-gradient(135deg,rgba(8,10,19,0.96),rgba(17,20,36,0.98))]" />
+      <div className="relative aspect-video w-full overflow-hidden rounded-lg border border-white/10 bg-slate-950 shadow-[0_26px_90px_rgba(0,0,0,0.38),inset_0_1px_0_rgba(255,255,255,0.06)]">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_22%_26%,rgba(71,184,255,0.26),transparent_34%),radial-gradient(circle_at_46%_65%,rgba(243,210,111,0.10),transparent_30%),radial-gradient(circle_at_84%_24%,rgba(255,107,154,0.18),transparent_30%),linear-gradient(135deg,rgba(8,10,19,0.96),rgba(17,20,36,0.98))]" />
         <div className="absolute inset-0 opacity-[0.18] [background-image:linear-gradient(rgba(255,255,255,0.11)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.08)_1px,transparent_1px)] [background-size:36px_36px]" />
 
-        <div className="relative z-10 h-full">
-          <div className="absolute left-[2.25%] top-[4.15%] min-w-0">
-            <p className="text-[var(--stage-room)] font-black tracking-[0.24em] text-cyan-100/70">
-              {appConfig.roomName}
-            </p>
-            <h1 className="truncate text-[var(--stage-title)] font-black leading-tight text-white">
-              {appConfig.name}
-            </h1>
-          </div>
-
-          <div className="absolute right-[2.25%] top-[5.55%] inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.07] px-[1.1%] py-[0.55%] text-[var(--stage-share)] font-black text-slate-200">
-            <span className="size-2 rounded-full bg-emerald-300 shadow-[0_0_14px_rgba(110,231,183,0.8)]" />
-            16:9 SHARE
-          </div>
-
-          <div className="absolute left-[2.25%] top-[14.9%] w-[69%]">
-            <p className="text-[var(--stage-topic-label)] font-black tracking-[0.22em] text-slate-400">
-              現在のお題
-            </p>
-            <p
-              className="mt-[0.28em] text-balance font-black text-white"
-              style={{ fontSize: "var(--stage-topic)", lineHeight: 1.04 }}
-            >
-              {topic}
-            </p>
-          </div>
-
-          <div className="absolute left-[8.9%] top-[27.4%] aspect-[26/17] w-[53.5%]">
-            <svg
-              viewBox={`0 0 ${viewBox.width} ${viewBox.height}`}
-              role="img"
-              aria-label={`選択中スピーカーの現在値は${activeValue}`}
-              className="absolute inset-0 size-full overflow-visible"
-            >
-              <defs>
-                <linearGradient id="broadcastBaseGradient" x1="0" x2="1" y1="0" y2="0">
-                  <stop offset="0%" stopColor={appConfig.colors.left} stopOpacity="0.42" />
-                  <stop offset="50%" stopColor={appConfig.colors.middle} stopOpacity="0.42" />
-                  <stop offset="100%" stopColor={appConfig.colors.right} stopOpacity="0.42" />
-                </linearGradient>
-                <linearGradient id="broadcastProgressGradient" x1="0" x2="1" y1="0" y2="0">
-                  <stop offset="0%" stopColor={appConfig.colors.left} />
-                  <stop offset="48%" stopColor={appConfig.colors.middle} />
-                  <stop offset="100%" stopColor={appConfig.colors.right} />
-                </linearGradient>
-                <filter id="broadcastMeterGlow" x="-25%" y="-25%" width="150%" height="150%">
-                  <feGaussianBlur stdDeviation="7" result="blur" />
-                  <feMerge>
-                    <feMergeNode in="blur" />
-                    <feMergeNode in="SourceGraphic" />
-                  </feMerge>
-                </filter>
-              </defs>
-              <polyline
-                points={basePoints}
-                fill="none"
-                stroke="url(#broadcastBaseGradient)"
-                strokeLinecap="round"
-                strokeWidth="30"
-              />
-              <polyline
-                points={progressPoints}
-                fill="none"
-                filter="url(#broadcastMeterGlow)"
-                stroke="url(#broadcastProgressGradient)"
-                strokeLinecap="round"
-                strokeWidth="18"
-              />
-              {[0, 50, 100].map((tick) => {
-                const point = pointOnMeter(tick, geometry);
-
-                return (
-                  <g key={tick}>
-                    <circle cx={point.x} cy={point.y} r="6" fill="rgba(255,255,255,0.9)" />
-                    <text
-                      x={point.x}
-                      y={point.y + (tick === 50 ? -24 : 30)}
-                      textAnchor="middle"
-                      className="fill-slate-100 text-[18px] font-black"
-                    >
-                      {tick}
-                    </text>
-                  </g>
-                );
-              })}
-            </svg>
-
-            {visibleSpeakers.map((speaker, index) => {
-              const speakerGeometry = {
-                ...geometry,
-                radius:
-                  geometry.radius +
-                  (appConfig.meter.speakerRadiusOffsets[index] ?? index * 8),
-              };
-              const point = pointOnMeter(speaker.value, speakerGeometry);
-
-              return (
-                <SpeakerAvatarMarker
-                  key={speaker.id}
-                  point={point}
-                  viewBoxWidth={viewBox.width}
-                  viewBoxHeight={viewBox.height}
-                  value={speaker.value}
-                  initial={speaker.initial}
-                  name={speaker.name}
-                  color={speaker.color}
-                  avatarUrl={speaker.avatarUrl}
-                  isActive={speaker.id === activeSpeakerId}
-                  large
-                  animationMs={appConfig.meter.animationMs}
-                  onSelect={() => onActiveSpeakerChange(speaker.id)}
-                />
-              );
-            })}
-
-            <div className="pointer-events-none absolute inset-x-0 bottom-[7%] grid place-items-center">
-              <div className="rounded-lg border border-white/10 bg-slate-950/[0.78] px-[clamp(1rem,1.45vw,1.8rem)] py-[clamp(0.65rem,0.85vw,1.05rem)] text-center shadow-[0_18px_55px_rgba(0,0,0,0.36)] backdrop-blur-md">
-                <p className="text-[var(--stage-current-name)] font-black tracking-[0.18em] text-slate-400">
-                  {activeSpeaker?.name ?? "CURRENT"}
-                </p>
-                <p className="text-[var(--stage-current-value)] font-black leading-none text-white">
-                  {activeValue}
-                </p>
-                <p className="text-[var(--stage-topic-label)] font-black text-cyan-100">
-                  {formatOpinionLabel(activeValue)}
-                </p>
-              </div>
+        <div className="relative z-10 flex h-full flex-col p-[var(--stage-pad)]">
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-[var(--stage-room)] font-black tracking-[0.24em] text-cyan-100/70">
+                {appConfig.roomName}
+              </p>
+              <h1 className="truncate text-[var(--stage-title)] font-black text-white">
+                {appConfig.name}
+              </h1>
+            </div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.07] px-[clamp(0.75rem,1.2vw,1.45rem)] py-[clamp(0.36rem,0.55vw,0.72rem)] text-[var(--stage-side-title)] font-black text-slate-200">
+              <span className="size-2 rounded-full bg-emerald-300 shadow-[0_0_14px_rgba(110,231,183,0.8)]" />
+              16:9 SHARE
             </div>
           </div>
 
-          <div className="absolute inset-x-[2.25%] bottom-[4.4%] grid grid-cols-[1fr_auto_1fr] items-center gap-3 text-[var(--stage-topic-label)] font-black">
-            <span className="truncate text-cyan-100">{leftLabel}</span>
-            <span className="rounded-full border border-white/10 bg-white/[0.06] px-[1.1%] py-[0.4%] text-slate-300">
-              白黒つけない帯
-            </span>
-            <span className="truncate text-right text-rose-100">{rightLabel}</span>
-          </div>
-
-          <aside
-            className={cn(
-              "absolute right-[2.25%] top-[13.9%] w-[25.2%] rounded-lg border border-white/10 bg-white/[0.06] p-[var(--stage-side-card-pad)]",
-              !fullscreen && "hidden md:block",
-            )}
-          >
-            <p className="text-[var(--stage-side-title)] font-black tracking-[0.18em] text-slate-400">
-              ROOM MOOD
-            </p>
-            <div className="mt-[3%] flex items-end justify-between gap-2">
+          <div className="mt-[var(--stage-gap)] grid min-h-0 flex-1 gap-[var(--stage-gap)] grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(210px,0.36fr)]">
+            <div className="grid min-w-0 grid-rows-[auto_minmax(0,1fr)_auto]">
               <div>
-                <p className="text-[var(--stage-side-number)] font-black leading-none text-white">
-                  {audienceVotes.length}
-                  <span className="ml-1 text-[0.42em] text-slate-400">人</span>
+                <p className="text-[var(--stage-topic-label)] font-black tracking-[0.22em] text-cyan-100/55">
+                  現在のお題
                 </p>
-                <p className="mt-1 text-[var(--stage-topic-label)] font-black text-cyan-100">
-                  {formatAudienceMood(audienceVotes)}
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-[var(--stage-side-title)] font-black text-slate-500">
-                  AVG
-                </p>
-                <p className="text-[var(--stage-avg-number)] font-black leading-none text-white">
-                  {formatSoftAverage(audienceVotes)}
-                </p>
-              </div>
-            </div>
-            <div className="mt-[6%] grid h-[var(--stage-histogram)] grid-cols-11 items-end gap-[2.3%]">
-              {buckets.map((bucket, index) => {
-                const count = counts[index];
-                const height = count ? `${24 + (count / maxCount) * 76}%` : "9%";
-
-                return (
-                  <div key={bucket} className="flex h-full items-end justify-center">
-                    <div
-                      className={cn(
-                        "w-full max-w-4 rounded-full border",
-                        count
-                          ? "border-white/20 bg-[linear-gradient(180deg,#ff6b9a,#f3d26f_52%,#47b8ff)]"
-                          : "border-white/10 bg-white/[0.04]",
-                      )}
-                      style={{ height }}
-                    />
-                  </div>
-                );
-              })}
-            </div>
-          </aside>
-
-          <aside
-            className={cn(
-              "absolute bottom-[3.7%] right-[2.25%] grid w-[25.2%] gap-[clamp(0.42rem,0.7vw,0.82rem)]",
-              !fullscreen && "hidden md:grid",
-            )}
-          >
-            {visibleSpeakers.map((speaker) => {
-              const isActive = speaker.id === activeSpeakerId;
-
-              return (
-                <button
-                  key={speaker.id}
-                  type="button"
-                  onClick={() => onActiveSpeakerChange(speaker.id)}
-                  className={cn(
-                    "grid min-h-[var(--stage-list-row)] grid-cols-[auto_1fr_auto] items-center gap-2 rounded-lg border px-[clamp(0.75rem,1vw,1.25rem)] text-left transition",
-                    isActive
-                      ? "border-white bg-white text-slate-950"
-                      : "border-white/10 bg-white/[0.05] text-slate-200 hover:bg-white/[0.09]",
-                  )}
+                <p
+                  className="mt-[0.25em] max-w-[13em] text-balance font-black text-white drop-shadow-[0_8px_24px_rgba(0,0,0,0.35)]"
+                  style={topicTextStyle}
                 >
-                  <span
-                    className="grid size-[clamp(1.45rem,2.1vw,2.35rem)] place-items-center rounded-full text-[clamp(0.62rem,0.8vw,0.9rem)] font-black text-slate-950"
-                    style={{ backgroundColor: speaker.color }}
-                  >
-                    {speaker.initial}
-                  </span>
-                  <span className="min-w-0 truncate text-[var(--stage-topic-label)] font-black">
-                    {speaker.name}
-                  </span>
-                  <span className="text-[var(--stage-topic-label)] font-black">
-                    {speaker.value}
-                  </span>
-                </button>
-              );
-            })}
-          </aside>
+                  {topic}
+                </p>
+              </div>
+
+              <div className="relative min-h-0">
+                <div className="pointer-events-none absolute inset-x-[9%] bottom-[8%] top-[14%] rounded-full bg-[radial-gradient(circle_at_50%_42%,rgba(243,210,111,0.12),transparent_35%),radial-gradient(circle_at_30%_70%,rgba(71,184,255,0.12),transparent_38%),radial-gradient(circle_at_74%_70%,rgba(255,107,154,0.12),transparent_38%)] blur-xl" />
+                <svg
+                  viewBox={`0 0 ${viewBox.width} ${viewBox.height}`}
+                  role="img"
+                  aria-label={`選択中スピーカーの現在値は${activeValue}`}
+                  className="absolute inset-0 size-full overflow-visible"
+                >
+                  <defs>
+                    <linearGradient id="broadcastBaseGradient" x1="0" x2="1" y1="0" y2="0">
+                      <stop offset="0%" stopColor={appConfig.colors.left} stopOpacity="0.42" />
+                      <stop offset="50%" stopColor={appConfig.colors.middle} stopOpacity="0.42" />
+                      <stop offset="100%" stopColor={appConfig.colors.right} stopOpacity="0.42" />
+                    </linearGradient>
+                    <linearGradient id="broadcastProgressGradient" x1="0" x2="1" y1="0" y2="0">
+                      <stop offset="0%" stopColor={appConfig.colors.left} />
+                      <stop offset="48%" stopColor={appConfig.colors.middle} />
+                      <stop offset="100%" stopColor={appConfig.colors.right} />
+                    </linearGradient>
+                    <filter id="broadcastMeterGlow" x="-30%" y="-30%" width="160%" height="160%">
+                      <feGaussianBlur stdDeviation="8" result="blur" />
+                      <feMerge>
+                        <feMergeNode in="blur" />
+                        <feMergeNode in="SourceGraphic" />
+                      </feMerge>
+                    </filter>
+                    <filter id="broadcastMiddleGlow" x="-40%" y="-40%" width="180%" height="180%">
+                      <feGaussianBlur stdDeviation="10" result="blur" />
+                      <feMerge>
+                        <feMergeNode in="blur" />
+                        <feMergeNode in="SourceGraphic" />
+                      </feMerge>
+                    </filter>
+                  </defs>
+                  <polyline
+                    points={basePoints}
+                    fill="none"
+                    stroke="rgba(2,6,23,0.62)"
+                    strokeLinecap="round"
+                    strokeWidth="42"
+                  />
+                  <polyline
+                    points={basePoints}
+                    fill="none"
+                    stroke="url(#broadcastBaseGradient)"
+                    strokeLinecap="round"
+                    strokeWidth="34"
+                  />
+                  <polyline
+                    points={middleRangePoints}
+                    fill="none"
+                    filter="url(#broadcastMiddleGlow)"
+                    stroke={appConfig.colors.middle}
+                    strokeLinecap="round"
+                    strokeOpacity="0.82"
+                    strokeWidth="40"
+                  />
+                  <polyline
+                    points={progressPoints}
+                    fill="none"
+                    filter="url(#broadcastMeterGlow)"
+                    stroke="url(#broadcastProgressGradient)"
+                    strokeLinecap="round"
+                    strokeWidth="22"
+                  />
+                  {[0, 50, 100].map((tick) => {
+                    const point = pointOnMeter(tick, geometry);
+
+                    return (
+                      <g key={tick}>
+                        <circle cx={point.x} cy={point.y} r="6" fill="rgba(255,255,255,0.9)" />
+                        <text
+                          x={point.x}
+                          y={point.y + (tick === 50 ? -24 : 30)}
+                          textAnchor="middle"
+                          className="fill-slate-50 text-[20px] font-black"
+                        >
+                          {tick}
+                        </text>
+                      </g>
+                    );
+                  })}
+                </svg>
+
+                {visibleSpeakers.map((speaker, index) => {
+                  const speakerGeometry = {
+                    ...geometry,
+                    radius:
+                      geometry.radius +
+                      (appConfig.meter.speakerRadiusOffsets[index] ?? index * 8),
+                  };
+                  const point = pointOnMeter(speaker.value, speakerGeometry);
+
+                  return (
+                    <SpeakerAvatarMarker
+                      key={speaker.id}
+                      point={point}
+                      viewBoxWidth={viewBox.width}
+                      viewBoxHeight={viewBox.height}
+                      value={speaker.value}
+                      initial={speaker.initial}
+                      name={speaker.name}
+                      color={speaker.color}
+                      avatarUrl={speaker.avatarUrl}
+                      isActive={speaker.id === activeSpeakerId}
+                      large
+                      animationMs={appConfig.meter.animationMs}
+                      onSelect={() => onActiveSpeakerChange(speaker.id)}
+                    />
+                  );
+                })}
+
+                <div className="pointer-events-none absolute inset-x-0 bottom-[6%] grid place-items-center">
+                  <div className="rounded-lg border border-white/15 bg-slate-950/[0.72] px-[clamp(1.05rem,1.6vw,2rem)] py-[clamp(0.72rem,1vw,1.25rem)] text-center shadow-[0_22px_70px_rgba(0,0,0,0.46),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl">
+                    <p className="text-[var(--stage-current-name)] font-black tracking-[0.2em] text-slate-400">
+                      {activeSpeaker?.name ?? "CURRENT"}
+                    </p>
+                    <p className="bg-[linear-gradient(180deg,#fff,#dbeafe)] bg-clip-text text-[var(--stage-current-value)] font-black leading-none text-transparent">
+                      {activeValue}
+                    </p>
+                    <p className="text-[var(--stage-topic-label)] font-black text-cyan-100">
+                      {formatOpinionLabel(activeValue)}
+                    </p>
+                    <p className="mt-1 text-[clamp(0.62rem,0.78vw,0.9rem)] font-black tracking-[0.18em] text-amber-100/55">
+                      {activeValue >= 43 && activeValue <= 57 ? "保留のゆらぎ" : " "}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 text-[var(--stage-topic-label)] font-black">
+                <span className="truncate rounded-full border border-cyan-200/15 bg-cyan-200/[0.07] px-3 py-1 text-cyan-50">
+                  {leftLabel}
+                </span>
+                <span className="rounded-full border border-amber-100/15 bg-amber-100/[0.07] px-3 py-1 text-amber-50/85">
+                  保留の帯
+                </span>
+                <span className="truncate rounded-full border border-rose-200/15 bg-rose-200/[0.07] px-3 py-1 text-right text-rose-50">
+                  {rightLabel}
+                </span>
+              </div>
+            </div>
+
+            <aside className="hidden min-w-0 content-between gap-3 md:grid">
+              <div className="rounded-lg border border-white/10 bg-white/[0.06] p-[var(--stage-side-card-pad)]">
+                <p className="text-[var(--stage-side-title)] font-black tracking-[0.18em] text-slate-400">
+                  ROOM MOOD
+                </p>
+                <div className="mt-2 flex items-end justify-between gap-2">
+                  <div>
+                    <p className="text-[var(--stage-side-number)] font-black leading-none text-white">
+                      {audienceVotes.length}
+                      <span className="ml-1 text-[0.42em] text-slate-400">人</span>
+                    </p>
+                    <p className="mt-1 text-[var(--stage-topic-label)] font-black text-cyan-100">
+                      {formatAudienceMood(audienceVotes)}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[var(--stage-side-title)] font-black text-slate-500">
+                      AVG
+                    </p>
+                    <p className="text-[var(--stage-avg-number)] font-black text-white">
+                      {formatSoftAverage(audienceVotes)}
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-3 grid h-[var(--stage-histogram)] grid-cols-11 items-end gap-1">
+                  {buckets.map((bucket, index) => {
+                    const count = counts[index];
+                    const height = count ? `${22 + (count / maxCount) * 78}%` : "8%";
+
+                    return (
+                      <div key={bucket} className="flex h-full items-end justify-center">
+                        <div
+                          className={cn(
+                            "w-full max-w-4 rounded-full border",
+                            count
+                              ? "border-white/20 bg-[linear-gradient(180deg,#ff6b9a,#f3d26f_52%,#47b8ff)]"
+                              : "border-white/10 bg-white/[0.04]",
+                          )}
+                          style={{ height }}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="grid gap-[clamp(0.5rem,0.75vw,0.9rem)]">
+                {visibleSpeakers.map((speaker) => {
+                  const isActive = speaker.id === activeSpeakerId;
+
+                  return (
+                    <button
+                      key={speaker.id}
+                      type="button"
+                      onClick={() => onActiveSpeakerChange(speaker.id)}
+                      className={cn(
+                        "grid min-h-[var(--stage-list-row)] grid-cols-[auto_1fr_auto] items-center gap-2 rounded-lg border px-[clamp(0.75rem,1vw,1.25rem)] text-left transition",
+                        isActive
+                          ? "border-white bg-white text-slate-950"
+                          : "border-white/10 bg-white/[0.05] text-slate-200 hover:bg-white/[0.09]",
+                      )}
+                    >
+                      <span
+                        className="grid size-[clamp(1.5rem,2.1vw,2.4rem)] place-items-center rounded-full text-[clamp(0.62rem,0.8vw,0.9rem)] font-black text-slate-950"
+                        style={{ backgroundColor: speaker.color }}
+                      >
+                        {speaker.initial}
+                      </span>
+                      <span className="min-w-0 truncate text-[var(--stage-topic-label)] font-black">
+                        {speaker.name}
+                      </span>
+                      <span className="text-[var(--stage-topic-label)] font-black">
+                        {speaker.value}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </aside>
+          </div>
         </div>
       </div>
     </section>

@@ -21,13 +21,13 @@ export const appConfig = {
     centerY: 260,
     radius: 190,
     speakerRadiusOffsets: [-24, -12, 0, 12, 24],
-    animationMs: 300,
+    animationMs: 420,
   },
   sound: {
     enabledByDefault: true,
     tickStep: 5,
-    minIntervalMs: 58,
-    volume: 0.028,
+    minIntervalMs: 72,
+    volume: 0.022,
   },
   colors: {
     left: "#47b8ff",
