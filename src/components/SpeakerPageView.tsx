@@ -14,7 +14,7 @@ import type {
 
 import { BroadcastStage } from "./BroadcastStage";
 import { HostControls } from "./HostControls";
-import { SpeakerControlLever } from "./SpeakerControlLever";
+import { SpeakerMultiLeverPanel } from "./SpeakerMultiLeverPanel";
 
 export function SpeakerPageView() {
   const [meetingState, setMeetingState] = useSyncedMeetingState();
@@ -27,10 +27,6 @@ export function SpeakerPageView() {
     activeSpeakerId,
     audienceVotes,
   } = meetingState;
-  const activeSpeaker =
-    speakers.find((speaker) => speaker.id === activeSpeakerId) ?? speakers[0];
-  const activeSpeakerValue = activeSpeaker?.value ?? 50;
-
   const { playTickForValue, primeTickSound } = useTickSound({
     enabled: soundEnabled,
     step: appConfig.sound.tickStep,
@@ -57,12 +53,13 @@ export function SpeakerPageView() {
     }));
   }
 
-  function updateActiveSpeakerValue(value: number) {
+  function updateSpeakerValue(speakerId: string, value: number) {
     updateMeetingState((currentState) => ({
       ...currentState,
       currentRole: "speaker",
+      activeSpeakerId: speakerId,
       speakers: currentState.speakers.map((speaker) =>
-        speaker.id === currentState.activeSpeakerId ? { ...speaker, value } : speaker,
+        speaker.id === speakerId ? { ...speaker, value } : speaker,
       ),
     }));
   }
@@ -100,6 +97,14 @@ export function SpeakerPageView() {
     }));
   }
 
+  function resetSpeakerManagement() {
+    updateMeetingState((currentState) => ({
+      ...currentState,
+      activeSpeakerId: initialMeetingState.activeSpeakerId,
+      speakers: initialMeetingState.speakers.map((speaker) => ({ ...speaker })),
+    }));
+  }
+
   return (
     <main className="relative min-h-screen overflow-hidden bg-slate-950">
       <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_18%_12%,rgba(71,184,255,0.16),transparent_30%),radial-gradient(circle_at_82%_18%,rgba(255,107,154,0.13),transparent_30%),linear-gradient(135deg,#070914_0%,#0d1120_44%,#160f1f_100%)]" />
@@ -118,23 +123,24 @@ export function SpeakerPageView() {
           </div>
           <nav className="flex flex-wrap gap-2 text-sm font-black">
             <Link
-              href="/stage"
-              target="_blank"
-              className="rounded-full border border-white/10 bg-white/[0.07] px-4 py-2 text-slate-100 transition hover:border-white/20 hover:bg-white/[0.1]"
-            >
-              画面共有
-            </Link>
-            <Link
               href="/"
               className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-slate-300 transition hover:border-white/20 hover:bg-white/[0.08]"
             >
-              全部入り
+              エントランス
             </Link>
             <Link
               href="/audience"
               className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-slate-300 transition hover:border-white/20 hover:bg-white/[0.08]"
             >
               視聴者
+            </Link>
+            <Link
+              href="/stage"
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-full border border-white/10 bg-white/[0.07] px-4 py-2 text-slate-100 transition hover:border-white/20 hover:bg-white/[0.1]"
+            >
+              画面共有
             </Link>
           </nav>
         </header>
@@ -150,8 +156,7 @@ export function SpeakerPageView() {
         />
 
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1.08fr)_minmax(380px,0.92fr)]">
-          <SpeakerControlLever
-            value={activeSpeakerValue}
+          <SpeakerMultiLeverPanel
             speakers={speakers}
             activeSpeakerId={activeSpeakerId}
             leftLabel={leftLabel}
@@ -159,7 +164,7 @@ export function SpeakerPageView() {
             soundEnabled={soundEnabled}
             onActiveSpeakerChange={setActiveSpeakerId}
             onSoundEnabledChange={setSoundEnabled}
-            onValueChange={updateActiveSpeakerValue}
+            onSpeakerValueChange={updateSpeakerValue}
             onReset={resetSpeakerMeter}
             onPrimeSound={primeTickSound}
             onTick={playTickForValue}
@@ -182,6 +187,7 @@ export function SpeakerPageView() {
             onActiveSpeakerChange={setActiveSpeakerId}
             onResetSpeaker={resetSpeakerMeter}
             onResetAudience={resetAudienceVotes}
+            onResetSpeakers={resetSpeakerManagement}
           />
         </div>
       </div>

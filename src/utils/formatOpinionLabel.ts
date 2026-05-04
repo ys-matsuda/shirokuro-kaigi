@@ -10,6 +10,20 @@ export function formatOpinionLabel(value: number) {
   return "かなり右寄り";
 }
 
+export function formatSpeakerMood(
+  value: number,
+  leftLabel = "左",
+  rightLabel = "右",
+) {
+  const roundedValue = Math.round(value);
+
+  if (roundedValue === 100) return rightLabel;
+  if (roundedValue >= 61) return `やや${rightLabel}寄り`;
+  if (roundedValue >= 40) return "真ん中で揺れている";
+  if (roundedValue > 0) return `やや${leftLabel}寄り`;
+  return leftLabel;
+}
+
 export function formatAudienceMood(
   votes: AudienceVote[],
   leftLabel = "左",

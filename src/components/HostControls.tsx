@@ -23,6 +23,7 @@ type HostControlsProps = {
   onActiveSpeakerChange: (speakerId: string) => void;
   onResetSpeaker: () => void;
   onResetAudience: () => void;
+  onResetSpeakers: () => void;
 };
 
 export function HostControls({
@@ -37,6 +38,7 @@ export function HostControls({
   onActiveSpeakerChange,
   onResetSpeaker,
   onResetAudience,
+  onResetSpeakers,
 }: HostControlsProps) {
   const [draftTopic, setDraftTopic] = useState(topic);
   const [draftLeftLabel, setDraftLeftLabel] = useState(leftLabel);
@@ -79,7 +81,13 @@ export function HostControls({
   function addSpeaker() {
     if (disabled || speakers.length >= appConfig.maxSpeakers) return;
 
-    const nextIndex = speakers.length + 1;
+    const usedNames = new Set(speakers.map((speaker) => speaker.name.trim()));
+    let nextIndex = speakers.length + 1;
+
+    while (usedNames.has(`スピーカー${nextIndex}`)) {
+      nextIndex += 1;
+    }
+
     const newSpeaker: SpeakerMeterParticipant = {
       id: `speaker-${Date.now()}`,
       name: `スピーカー${nextIndex}`,
@@ -191,16 +199,28 @@ export function HostControls({
               スピーカー管理
             </h3>
           </div>
-          <button
-            type="button"
-            onClick={addSpeaker}
-            disabled={disabled || speakers.length >= appConfig.maxSpeakers}
-            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/[0.06] px-3 text-sm font-black text-slate-100 transition hover:bg-white/[0.1] disabled:cursor-not-allowed disabled:opacity-45"
-            title="スピーカーを追加"
-          >
-            <Plus aria-hidden="true" className="size-4" />
-            追加
-          </button>
+          <div className="flex flex-wrap justify-end gap-2">
+            <button
+              type="button"
+              onClick={onResetSpeakers}
+              disabled={disabled}
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-3 text-sm font-black text-slate-200 transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-45"
+              title="スピーカー管理を初期状態に戻す"
+            >
+              <RotateCcw aria-hidden="true" className="size-4" />
+              初期化
+            </button>
+            <button
+              type="button"
+              onClick={addSpeaker}
+              disabled={disabled || speakers.length >= appConfig.maxSpeakers}
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/[0.06] px-3 text-sm font-black text-slate-100 transition hover:bg-white/[0.1] disabled:cursor-not-allowed disabled:opacity-45"
+              title="スピーカーを追加"
+            >
+              <Plus aria-hidden="true" className="size-4" />
+              追加
+            </button>
+          </div>
         </div>
 
         <div className="grid gap-3">

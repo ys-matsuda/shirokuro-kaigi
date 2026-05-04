@@ -11,7 +11,7 @@ import type {
   SpeakerMeterParticipant,
 } from "@/types/meeting";
 
-const storageKey = "consensus-meter:meeting-state:v2";
+const storageKey = "consensus-meter:meeting-state:v3";
 const roles: Role[] = ["host", "speaker", "audience"];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
