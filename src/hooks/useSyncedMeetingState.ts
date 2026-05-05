@@ -11,8 +11,13 @@ import type {
   SpeakerMeterParticipant,
 } from "@/types/meeting";
 
-const storageKey = "consensus-meter:meeting-state:v3";
+const legacyStorageKey = "consensus-meter:meeting-state:v3";
+const roomStorageKeyPrefix = "consensus-meter:meeting-state:v4";
 const roles: Role[] = ["host", "speaker", "audience"];
+
+function getRoomStorageKey(roomId: string) {
+  return `${roomStorageKeyPrefix}:${roomId}`;
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -39,7 +44,10 @@ function isSpeaker(value: unknown): value is SpeakerMeterParticipant {
   );
 }
 
-function normalizeMeetingState(value: unknown): MeetingState {
+function normalizeMeetingState(
+  value: unknown,
+  roomId: string = appConfig.defaultRoomId,
+): MeetingState {
   const source = isRecord(value) ? value : {};
   const speakers = Array.isArray(source.speakers)
     ? source.speakers.filter(isSpeaker).slice(0, appConfig.maxSpeakers)
@@ -51,6 +59,7 @@ function normalizeMeetingState(value: unknown): MeetingState {
       : speakers[0]?.id ?? initialMeetingState.activeSpeakerId;
 
   return {
+    roomId: typeof source.roomId === "string" ? source.roomId : roomId,
     topic:
       typeof source.topic === "string"
         ? source.topic
@@ -80,58 +89,70 @@ function normalizeMeetingState(value: unknown): MeetingState {
   };
 }
 
-function readStoredMeetingState() {
+function readStoredMeetingState(roomId: string) {
   try {
-    const rawValue = window.localStorage.getItem(storageKey);
-    return rawValue ? normalizeMeetingState(JSON.parse(rawValue)) : initialMeetingState;
+    const roomStorageKey = getRoomStorageKey(roomId);
+    const rawValue =
+      window.localStorage.getItem(roomStorageKey) ??
+      (roomId === appConfig.defaultRoomId
+        ? window.localStorage.getItem(legacyStorageKey)
+        : null);
+
+    return rawValue
+      ? normalizeMeetingState(JSON.parse(rawValue), roomId)
+      : { ...initialMeetingState, roomId };
   } catch {
-    return initialMeetingState;
+    return { ...initialMeetingState, roomId };
   }
 }
 
-function writeStoredMeetingState(state: MeetingState) {
+function writeStoredMeetingState(roomId: string, state: MeetingState) {
   try {
-    window.localStorage.setItem(storageKey, JSON.stringify(state));
+    window.localStorage.setItem(
+      getRoomStorageKey(roomId),
+      JSON.stringify({ ...state, roomId }),
+    );
   } catch {
     // The prototype still works if browser storage is unavailable.
   }
 }
 
-export function useSyncedMeetingState(): [
-  MeetingState,
-  Dispatch<SetStateAction<MeetingState>>,
-] {
+export function useSyncedMeetingState(
+  roomId: string = appConfig.defaultRoomId,
+): [MeetingState, Dispatch<SetStateAction<MeetingState>>] {
   const [meetingState, setMeetingState] = useState<MeetingState>(initialMeetingState);
-  const [hasLoadedStorage, setHasLoadedStorage] = useState(false);
+  const [loadedRoomId, setLoadedRoomId] = useState<string | null>(null);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
-      setMeetingState(readStoredMeetingState());
-      setHasLoadedStorage(true);
+      setMeetingState(readStoredMeetingState(roomId));
+      setLoadedRoomId(roomId);
     }, 0);
 
     return () => window.clearTimeout(timeoutId);
-  }, []);
+  }, [roomId]);
 
   useEffect(() => {
-    if (!hasLoadedStorage) return;
-    writeStoredMeetingState(meetingState);
-  }, [hasLoadedStorage, meetingState]);
+    if (loadedRoomId !== roomId) return;
+    writeStoredMeetingState(roomId, meetingState);
+  }, [loadedRoomId, meetingState, roomId]);
 
   useEffect(() => {
+    const roomStorageKey = getRoomStorageKey(roomId);
+
     function handleStorage(event: StorageEvent) {
-      if (event.key !== storageKey || event.newValue === null) return;
+      if (event.key !== roomStorageKey || event.newValue === null) return;
 
       try {
-        setMeetingState(normalizeMeetingState(JSON.parse(event.newValue)));
+        setMeetingState(normalizeMeetingState(JSON.parse(event.newValue), roomId));
       } catch {
-        setMeetingState(initialMeetingState);
+        setMeetingState({ ...initialMeetingState, roomId });
       }
     }
 
     window.addEventListener("storage", handleStorage);
     return () => window.removeEventListener("storage", handleStorage);
-  }, []);
+  }, [roomId]);
 
   return [meetingState, setMeetingState];
 }

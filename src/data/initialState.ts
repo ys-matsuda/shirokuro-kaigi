@@ -2,6 +2,7 @@ import { appConfig } from "@/config/app";
 import type { MeetingState } from "@/types/meeting";
 
 export const initialMeetingState: MeetingState = {
+  roomId: appConfig.defaultRoomId,
   topic: "酔って失言した人を許せる？",
   leftLabel: "許せない",
   rightLabel: "許せる",

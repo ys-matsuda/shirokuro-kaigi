@@ -1,5 +1,11 @@
 export type Role = "host" | "speaker" | "audience";
 
+export type MeetingRoom = {
+  id: string;
+  name: string;
+  description?: string;
+};
+
 export type AudienceVote = {
   id: string;
   name: string;
@@ -16,6 +22,7 @@ export type SpeakerMeterParticipant = {
 };
 
 export type MeetingState = {
+  roomId: string;
   topic: string;
   leftLabel: string;
   rightLabel: string;

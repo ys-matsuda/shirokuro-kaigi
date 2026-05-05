@@ -1,7 +1,15 @@
 export const appConfig = {
   name: "白黒つけない会議",
-  roomName: "おとなの恋鯖",
-  communityName: "おとなの恋鯖",
+  roomName: "",
+  communityName: "",
+  defaultRoomId: "main",
+  rooms: [
+    {
+      id: "main",
+      name: "メイン会場",
+      description: "標準の会議ルーム",
+    },
+  ],
   speakerName: "今話している人",
   speakerAvatarInitial: "話",
   maxSpeakers: 5,

@@ -222,9 +222,11 @@ export function BroadcastStage({
         <div className="relative z-10 flex h-full flex-col p-[var(--stage-pad)]">
           <div className="flex items-center justify-between gap-4">
             <div className="min-w-0">
-              <p className="text-[var(--stage-room)] font-black tracking-[0.24em] text-cyan-100/70">
-                {appConfig.roomName}
-              </p>
+              {appConfig.roomName ? (
+                <p className="text-[var(--stage-room)] font-black tracking-[0.24em] text-cyan-100/70">
+                  {appConfig.roomName}
+                </p>
+              ) : null}
               <h1 className="truncate text-[var(--stage-title)] font-black text-white">
                 {appConfig.name}
               </h1>

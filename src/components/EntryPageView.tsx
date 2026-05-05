@@ -34,10 +34,14 @@ export function EntryPageView() {
       <div className="relative z-10 mx-auto grid min-h-screen w-full max-w-5xl content-center gap-8 px-4 py-8 sm:px-6 lg:px-8">
         <header>
           <div>
-            <p className="text-sm font-black tracking-[0.24em] text-cyan-100/65">
-              {appConfig.roomName}
-            </p>
-            <h1 className="mt-3 text-4xl font-black leading-tight text-white sm:text-6xl">
+            {appConfig.roomName ? (
+              <p className="text-sm font-black tracking-[0.24em] text-cyan-100/65">
+                {appConfig.roomName}
+              </p>
+            ) : null}
+            <h1
+              className={`${appConfig.roomName ? "mt-3 " : ""}text-4xl font-black leading-tight text-white sm:text-6xl`}
+            >
               {appConfig.name}
             </h1>
           </div>
