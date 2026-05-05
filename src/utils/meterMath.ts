@@ -33,6 +33,24 @@ export function pointOnMeter(value: number, geometry: MeterGeometry): MeterPoint
   };
 }
 
+export function arcPathBetweenValues(
+  fromValue: number,
+  toValue: number,
+  geometry: MeterGeometry,
+) {
+  const startValue = clampValue(fromValue);
+  const endValue = clampValue(toValue);
+  const startPoint = pointOnMeter(startValue, geometry);
+  const endPoint = pointOnMeter(endValue, geometry);
+  const angleDelta = Math.abs(valueToAngle(endValue, geometry) - valueToAngle(startValue, geometry));
+  const largeArcFlag = angleDelta > 180 ? 1 : 0;
+
+  return [
+    `M ${startPoint.x.toFixed(2)} ${startPoint.y.toFixed(2)}`,
+    `A ${geometry.radius} ${geometry.radius} 0 ${largeArcFlag} 1 ${endPoint.x.toFixed(2)} ${endPoint.y.toFixed(2)}`,
+  ].join(" ");
+}
+
 export function arcPolylinePoints(
   toValue: number,
   geometry: MeterGeometry,

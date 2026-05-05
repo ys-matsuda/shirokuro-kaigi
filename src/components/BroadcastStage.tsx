@@ -8,12 +8,11 @@ import {
   formatSoftAverage,
 } from "@/utils/formatOpinionLabel";
 import {
-  arcPolylinePoints,
+  arcPathBetweenValues,
   pointOnMeter,
   type MeterGeometry,
+  type MeterPoint,
 } from "@/utils/meterMath";
-
-import { SpeakerAvatarMarker } from "./SpeakerAvatarMarker";
 
 type BroadcastStageProps = {
   topic: string;
@@ -33,6 +32,145 @@ const viewBox = {
 
 const geometry: MeterGeometry = appConfig.meter;
 const buckets = Array.from({ length: 11 }, (_, index) => index * 10);
+const arcSegmentCount = 72;
+const arcSegments = Array.from({ length: arcSegmentCount }, (_, index) => {
+  const from = (index / arcSegmentCount) * 100;
+  const to = ((index + 1) / arcSegmentCount) * 100;
+
+  return {
+    from,
+    to,
+    mid: (from + to) / 2,
+  };
+});
+
+function hexToRgb(hex: string) {
+  const value = hex.replace("#", "");
+  const normalized =
+    value.length === 3
+      ? value
+          .split("")
+          .map((character) => character + character)
+          .join("")
+      : value;
+
+  return {
+    r: Number.parseInt(normalized.slice(0, 2), 16),
+    g: Number.parseInt(normalized.slice(2, 4), 16),
+    b: Number.parseInt(normalized.slice(4, 6), 16),
+  };
+}
+
+function mixColor(fromHex: string, toHex: string, progress: number) {
+  const from = hexToRgb(fromHex);
+  const to = hexToRgb(toHex);
+  const safeProgress = Math.min(1, Math.max(0, progress));
+  const mix = (fromValue: number, toValue: number) =>
+    Math.round(fromValue + (toValue - fromValue) * safeProgress);
+
+  return `rgb(${mix(from.r, to.r)}, ${mix(from.g, to.g)}, ${mix(from.b, to.b)})`;
+}
+
+function meterColorAt(value: number) {
+  if (value <= 50) {
+    return mixColor(appConfig.colors.left, appConfig.colors.middle, value / 50);
+  }
+
+  return mixColor(
+    appConfig.colors.middle,
+    appConfig.colors.right,
+    (value - 50) / 50,
+  );
+}
+
+function SpeakerSvgMarker({
+  point,
+  value,
+  initial,
+  name,
+  color,
+  isActive,
+  onSelect,
+  animationMs,
+}: {
+  point: MeterPoint;
+  value: number;
+  initial: string;
+  name: string;
+  color: string;
+  isActive: boolean;
+  onSelect: () => void;
+  animationMs: number;
+}) {
+  const outerRadius = isActive ? 34 : 23;
+  const innerRadius = isActive ? 28 : 18;
+  const valueLabelY = outerRadius + 14;
+  const valueLabelWidth = isActive ? 32 : 28;
+
+  return (
+    <g
+      role="button"
+      tabIndex={0}
+      aria-label={`${name}のスピーカー位置 ${value}`}
+      className="cursor-pointer outline-none"
+      onClick={onSelect}
+      onKeyDown={(event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
+        onSelect();
+      }}
+      style={{
+        transform: `translate(${point.x}px, ${point.y}px) scale(${isActive ? 1.06 : 1})`,
+        transformOrigin: "0 0",
+        transition: `transform ${animationMs}ms cubic-bezier(0.16, 1, 0.3, 1)`,
+      }}
+    >
+      <circle
+        r={outerRadius}
+        fill="rgba(2,6,23,0.92)"
+        stroke={isActive ? "rgba(255,255,255,0.92)" : "rgba(255,255,255,0.36)"}
+        strokeWidth={isActive ? 2.2 : 1.8}
+      />
+      <circle
+        r={innerRadius}
+        fill={color}
+        stroke="rgba(255,255,255,0.42)"
+        strokeWidth="1"
+      />
+      <circle
+        r={innerRadius}
+        fill="url(#speakerMarkerSheen)"
+        opacity={isActive ? 0.78 : 0.62}
+      />
+      <text
+        y={isActive ? 7 : 5}
+        textAnchor="middle"
+        className="pointer-events-none fill-slate-950 font-black"
+        fontSize={isActive ? 22 : 17}
+      >
+        {initial}
+      </text>
+      <g transform={`translate(${-valueLabelWidth / 2} ${valueLabelY})`}>
+        <rect
+          width={valueLabelWidth}
+          height="18"
+          rx="9"
+          fill="rgba(2,6,23,0.94)"
+          stroke="rgba(255,255,255,0.12)"
+        />
+        <text
+          x={valueLabelWidth / 2}
+          y="13"
+          textAnchor="middle"
+          className="pointer-events-none fill-white font-black"
+          fontSize="10"
+        >
+          {value}
+        </text>
+      </g>
+    </g>
+  );
+}
 
 export function BroadcastStage({
   topic,
@@ -47,8 +185,13 @@ export function BroadcastStage({
   const activeSpeaker = speakers.find((speaker) => speaker.id === activeSpeakerId);
   const activeValue = activeSpeaker?.value ?? 50;
   const visibleSpeakers = speakers.slice(0, appConfig.maxSpeakers);
-  const basePoints = arcPolylinePoints(100, geometry, 136);
-  const progressPoints = arcPolylinePoints(activeValue, geometry, 136);
+  const activePoint = pointOnMeter(activeValue, geometry);
+  const progressSegments = arcSegments
+    .map((segment) => ({
+      ...segment,
+      to: Math.min(segment.to, activeValue),
+    }))
+    .filter((segment) => segment.from < activeValue);
   const counts = buckets.map(
     (bucket) => audienceVotes.filter((vote) => vote.value === bucket).length,
   );
@@ -142,16 +285,11 @@ export function BroadcastStage({
                     className="absolute inset-0 size-full overflow-visible"
                   >
                     <defs>
-                      <linearGradient id="broadcastBaseGradient" x1="0" x2="1" y1="0" y2="0">
-                        <stop offset="0%" stopColor={appConfig.colors.left} stopOpacity="0.42" />
-                        <stop offset="50%" stopColor={appConfig.colors.middle} stopOpacity="0.42" />
-                        <stop offset="100%" stopColor={appConfig.colors.right} stopOpacity="0.42" />
-                      </linearGradient>
-                      <linearGradient id="broadcastProgressGradient" x1="0" x2="1" y1="0" y2="0">
-                        <stop offset="0%" stopColor={appConfig.colors.left} />
-                        <stop offset="48%" stopColor={appConfig.colors.middle} />
-                        <stop offset="100%" stopColor={appConfig.colors.right} />
-                      </linearGradient>
+                      <radialGradient id="speakerMarkerSheen" cx="34%" cy="26%" r="72%">
+                        <stop offset="0%" stopColor="#ffffff" stopOpacity="0.72" />
+                        <stop offset="48%" stopColor="#ffffff" stopOpacity="0.18" />
+                        <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
+                      </radialGradient>
                       <filter id="broadcastMeterGlow" x="-30%" y="-30%" width="160%" height="160%">
                         <feGaussianBlur stdDeviation="8" result="blur" />
                         <feMerge>
@@ -160,28 +298,53 @@ export function BroadcastStage({
                         </feMerge>
                       </filter>
                     </defs>
-                    <polyline
-                      points={basePoints}
+                    <path
+                      d={arcPathBetweenValues(0, 100, geometry)}
                       fill="none"
                       stroke="rgba(2,6,23,0.62)"
                       strokeLinecap="round"
                       strokeWidth="42"
                     />
-                    <polyline
-                      points={basePoints}
-                      fill="none"
-                      stroke="url(#broadcastBaseGradient)"
-                      strokeLinecap="round"
-                      strokeWidth="34"
-                    />
-                    <polyline
-                      points={progressPoints}
-                      fill="none"
-                      filter="url(#broadcastMeterGlow)"
-                      stroke="url(#broadcastProgressGradient)"
-                      strokeLinecap="round"
-                      strokeWidth="22"
-                    />
+                    {arcSegments.map((segment) => (
+                      <path
+                        key={`base-${segment.from}`}
+                        d={arcPathBetweenValues(segment.from, segment.to, geometry)}
+                        fill="none"
+                        stroke={meterColorAt(segment.mid)}
+                        strokeLinecap="butt"
+                        strokeOpacity="0.42"
+                        strokeWidth="34"
+                      />
+                    ))}
+                    {progressSegments.map((segment) => (
+                      <path
+                        key={`progress-${segment.from}`}
+                        d={arcPathBetweenValues(segment.from, segment.to, geometry)}
+                        fill="none"
+                        filter="url(#broadcastMeterGlow)"
+                        stroke={meterColorAt((segment.from + segment.to) / 2)}
+                        strokeLinecap="butt"
+                        strokeWidth="22"
+                      />
+                    ))}
+                    {activeValue > 0 ? (
+                      <circle
+                        cx={pointOnMeter(0, geometry).x}
+                        cy={pointOnMeter(0, geometry).y}
+                        r="11"
+                        fill={meterColorAt(0)}
+                        filter="url(#broadcastMeterGlow)"
+                      />
+                    ) : null}
+                    {activeValue > 0 ? (
+                      <circle
+                        cx={activePoint.x}
+                        cy={activePoint.y}
+                        r="11"
+                        fill={meterColorAt(activeValue)}
+                        filter="url(#broadcastMeterGlow)"
+                      />
+                    ) : null}
                     {[0, 50, 100].map((tick) => {
                       const point = pointOnMeter(tick, geometry);
 
@@ -199,9 +362,8 @@ export function BroadcastStage({
                         </g>
                       );
                     })}
-                  </svg>
 
-                  {visibleSpeakers.map((speaker, index) => {
+                    {visibleSpeakers.map((speaker, index) => {
                     const speakerGeometry = {
                       ...geometry,
                       radius:
@@ -211,23 +373,20 @@ export function BroadcastStage({
                     const point = pointOnMeter(speaker.value, speakerGeometry);
 
                     return (
-                      <SpeakerAvatarMarker
+                      <SpeakerSvgMarker
                         key={speaker.id}
                         point={point}
-                        viewBoxWidth={viewBox.width}
-                        viewBoxHeight={viewBox.height}
                         value={speaker.value}
                         initial={speaker.initial}
                         name={speaker.name}
                         color={speaker.color}
-                        avatarUrl={speaker.avatarUrl}
                         isActive={speaker.id === activeSpeakerId}
-                        large
                         animationMs={appConfig.meter.animationMs}
                         onSelect={() => onActiveSpeakerChange(speaker.id)}
                       />
                     );
                   })}
+                  </svg>
                 </div>
 
                 <div className="pointer-events-none absolute inset-x-[18%] bottom-[12%] h-px bg-gradient-to-r from-transparent via-white/18 to-transparent" />

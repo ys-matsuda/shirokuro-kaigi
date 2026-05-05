@@ -1,6 +1,6 @@
 export const appConfig = {
   name: "白黒つけない会議",
-  roomName: "おとなの恋鯖 / 夜の雑談ステージ",
+  roomName: "おとなの恋鯖",
   communityName: "おとなの恋鯖",
   speakerName: "今話している人",
   speakerAvatarInitial: "話",
