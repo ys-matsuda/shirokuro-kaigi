@@ -32,17 +32,6 @@ const viewBox = {
 
 const geometry: MeterGeometry = appConfig.meter;
 const buckets = Array.from({ length: 11 }, (_, index) => index * 10);
-const arcSegmentCount = 72;
-const arcSegments = Array.from({ length: arcSegmentCount }, (_, index) => {
-  const from = (index / arcSegmentCount) * 100;
-  const to = ((index + 1) / arcSegmentCount) * 100;
-
-  return {
-    from,
-    to,
-    mid: (from + to) / 2,
-  };
-});
 
 function hexToRgb(hex: string) {
   const value = hex.replace("#", "");
@@ -185,13 +174,13 @@ export function BroadcastStage({
   const activeSpeaker = speakers.find((speaker) => speaker.id === activeSpeakerId);
   const activeValue = activeSpeaker?.value ?? 50;
   const visibleSpeakers = speakers.slice(0, appConfig.maxSpeakers);
+  const progressStartPoint = pointOnMeter(0, geometry);
   const activePoint = pointOnMeter(activeValue, geometry);
-  const progressSegments = arcSegments
-    .map((segment) => ({
-      ...segment,
-      to: Math.min(segment.to, activeValue),
-    }))
-    .filter((segment) => segment.from < activeValue);
+  const fullArcPath = arcPathBetweenValues(0, 100, geometry);
+  const progressArcPath =
+    activeValue > 0 ? arcPathBetweenValues(0, activeValue, geometry) : "";
+  const activeProgressColor = meterColorAt(activeValue);
+  const middleProgressOffset = `${Math.min(100, (50 / Math.max(activeValue, 1)) * 100)}%`;
   const counts = buckets.map(
     (bucket) => audienceVotes.filter((vote) => vote.value === bucket).length,
   );
@@ -285,13 +274,63 @@ export function BroadcastStage({
                     className="absolute inset-0 size-full overflow-visible"
                   >
                     <defs>
+                      <linearGradient
+                        id="broadcastBaseGradient"
+                        gradientUnits="userSpaceOnUse"
+                        x1="64"
+                        x2="456"
+                        y1="0"
+                        y2="0"
+                      >
+                        <stop offset="0%" stopColor={appConfig.colors.left} />
+                        <stop offset="50%" stopColor={appConfig.colors.middle} />
+                        <stop offset="100%" stopColor={appConfig.colors.right} />
+                      </linearGradient>
+                      <linearGradient
+                        id="broadcastProgressGradient"
+                        gradientUnits="userSpaceOnUse"
+                        x1={progressStartPoint.x}
+                        x2={activePoint.x}
+                        y1={progressStartPoint.y}
+                        y2={activePoint.y}
+                      >
+                        <stop offset="0%" stopColor={appConfig.colors.left} />
+                        {activeValue > 50 ? (
+                          <stop
+                            offset={middleProgressOffset}
+                            stopColor={appConfig.colors.middle}
+                          />
+                        ) : null}
+                        <stop offset="100%" stopColor={activeProgressColor} />
+                      </linearGradient>
                       <radialGradient id="speakerMarkerSheen" cx="34%" cy="26%" r="72%">
                         <stop offset="0%" stopColor="#ffffff" stopOpacity="0.72" />
                         <stop offset="48%" stopColor="#ffffff" stopOpacity="0.18" />
                         <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
                       </radialGradient>
-                      <filter id="broadcastMeterGlow" x="-30%" y="-30%" width="160%" height="160%">
-                        <feGaussianBlur stdDeviation="8" result="blur" />
+                      <filter
+                        id="broadcastMeterGlow"
+                        filterUnits="userSpaceOnUse"
+                        x="0"
+                        y="0"
+                        width={viewBox.width}
+                        height={viewBox.height}
+                      >
+                        <feGaussianBlur stdDeviation="9" result="blur" />
+                        <feMerge>
+                          <feMergeNode in="blur" />
+                          <feMergeNode in="SourceGraphic" />
+                        </feMerge>
+                      </filter>
+                      <filter
+                        id="broadcastMeterBloom"
+                        filterUnits="userSpaceOnUse"
+                        x="0"
+                        y="0"
+                        width={viewBox.width}
+                        height={viewBox.height}
+                      >
+                        <feGaussianBlur stdDeviation="14" result="blur" />
                         <feMerge>
                           <feMergeNode in="blur" />
                           <feMergeNode in="SourceGraphic" />
@@ -299,50 +338,86 @@ export function BroadcastStage({
                       </filter>
                     </defs>
                     <path
-                      d={arcPathBetweenValues(0, 100, geometry)}
+                      d={fullArcPath}
                       fill="none"
                       stroke="rgba(2,6,23,0.62)"
                       strokeLinecap="round"
+                      strokeWidth="50"
+                    />
+                    <path
+                      d={fullArcPath}
+                      fill="none"
+                      filter="url(#broadcastMeterBloom)"
+                      stroke="url(#broadcastBaseGradient)"
+                      strokeLinecap="round"
+                      strokeOpacity="0.28"
+                      strokeWidth="50"
+                    />
+                    <path
+                      d={fullArcPath}
+                      fill="none"
+                      stroke="rgba(2,6,23,0.36)"
+                      strokeLinecap="round"
                       strokeWidth="42"
                     />
-                    {arcSegments.map((segment) => (
+                    <path
+                      d={fullArcPath}
+                      fill="none"
+                      stroke="url(#broadcastBaseGradient)"
+                      strokeLinecap="round"
+                      strokeOpacity="0.72"
+                      strokeWidth="36"
+                    />
+                    {activeValue > 0 ? (
                       <path
-                        key={`base-${segment.from}`}
-                        d={arcPathBetweenValues(segment.from, segment.to, geometry)}
+                        d={progressArcPath}
                         fill="none"
-                        stroke={meterColorAt(segment.mid)}
-                        strokeLinecap="butt"
-                        strokeOpacity="0.42"
-                        strokeWidth="34"
+                        filter="url(#broadcastMeterBloom)"
+                        stroke="url(#broadcastProgressGradient)"
+                        strokeLinecap="round"
+                        strokeOpacity="0.62"
+                        strokeWidth="50"
                       />
-                    ))}
-                    {progressSegments.map((segment) => (
+                    ) : null}
+                    {activeValue > 0 ? (
                       <path
-                        key={`progress-${segment.from}`}
-                        d={arcPathBetweenValues(segment.from, segment.to, geometry)}
+                        d={progressArcPath}
                         fill="none"
                         filter="url(#broadcastMeterGlow)"
-                        stroke={meterColorAt((segment.from + segment.to) / 2)}
-                        strokeLinecap="butt"
-                        strokeWidth="22"
+                        stroke="url(#broadcastProgressGradient)"
+                        strokeLinecap="round"
+                        strokeWidth="31"
                       />
-                    ))}
+                    ) : null}
+                    {activeValue > 0 ? (
+                      <path
+                        d={progressArcPath}
+                        fill="none"
+                        stroke="rgba(255,255,255,0.28)"
+                        strokeLinecap="round"
+                        strokeWidth="7"
+                      />
+                    ) : null}
                     {activeValue > 0 ? (
                       <circle
                         cx={pointOnMeter(0, geometry).x}
                         cy={pointOnMeter(0, geometry).y}
-                        r="11"
+                        r="14"
                         fill={meterColorAt(0)}
                         filter="url(#broadcastMeterGlow)"
+                        stroke="rgba(255,255,255,0.78)"
+                        strokeWidth="3"
                       />
                     ) : null}
                     {activeValue > 0 ? (
                       <circle
                         cx={activePoint.x}
                         cy={activePoint.y}
-                        r="11"
+                        r="14"
                         fill={meterColorAt(activeValue)}
                         filter="url(#broadcastMeterGlow)"
+                        stroke="rgba(255,255,255,0.78)"
+                        strokeWidth="3"
                       />
                     ) : null}
                     {[0, 50, 100].map((tick) => {
