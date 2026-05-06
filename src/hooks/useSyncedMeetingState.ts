@@ -1,9 +1,22 @@
 "use client";
 
-import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 
 import { appConfig } from "@/config/app";
 import { initialMeetingState } from "@/data/initialState";
+import { getSupabaseBrowserClient } from "@/lib/supabaseClient";
+import {
+  fetchMeetingStateFromSupabase,
+  persistMeetingStateToSupabase,
+} from "@/services/supabaseMeetingState";
 import type {
   AudienceVote,
   MeetingState,
@@ -120,17 +133,44 @@ function writeStoredMeetingState(roomId: string, state: MeetingState) {
 export function useSyncedMeetingState(
   roomId: string = appConfig.defaultRoomId,
 ): [MeetingState, Dispatch<SetStateAction<MeetingState>>] {
+  const supabase = useMemo(() => getSupabaseBrowserClient(), []);
   const [meetingState, setMeetingState] = useState<MeetingState>(initialMeetingState);
   const [loadedRoomId, setLoadedRoomId] = useState<string | null>(null);
+  const previousPersistedStateRef = useRef<MeetingState | null>(null);
+  const pendingPersistRef = useRef<MeetingState | null>(null);
 
   useEffect(() => {
+    let isActive = true;
+
     const timeoutId = window.setTimeout(() => {
-      setMeetingState(readStoredMeetingState(roomId));
+      const localState = readStoredMeetingState(roomId);
+      setMeetingState(localState);
+      previousPersistedStateRef.current = localState;
       setLoadedRoomId(roomId);
+
+      if (!supabase) return;
+
+      fetchMeetingStateFromSupabase(supabase, roomId)
+        .then((remoteState) => {
+          if (!isActive) return;
+
+          setMeetingState((currentState) => ({
+            ...remoteState,
+            currentRole: currentState.currentRole,
+            soundEnabled: currentState.soundEnabled,
+          }));
+          previousPersistedStateRef.current = remoteState;
+        })
+        .catch((error: unknown) => {
+          console.warn("Supabase state load failed. Using local state.", error);
+        });
     }, 0);
 
-    return () => window.clearTimeout(timeoutId);
-  }, [roomId]);
+    return () => {
+      isActive = false;
+      window.clearTimeout(timeoutId);
+    };
+  }, [roomId, supabase]);
 
   useEffect(() => {
     if (loadedRoomId !== roomId) return;
@@ -154,5 +194,102 @@ export function useSyncedMeetingState(
     return () => window.removeEventListener("storage", handleStorage);
   }, [roomId]);
 
-  return [meetingState, setMeetingState];
+  useEffect(() => {
+    if (!supabase) return;
+    const client = supabase;
+
+    let refreshTimeoutId: number | null = null;
+
+    function scheduleRefresh() {
+      if (refreshTimeoutId !== null) {
+        window.clearTimeout(refreshTimeoutId);
+      }
+
+      refreshTimeoutId = window.setTimeout(() => {
+        fetchMeetingStateFromSupabase(client, roomId)
+          .then((remoteState) => {
+            setMeetingState((currentState) => ({
+              ...remoteState,
+              currentRole: currentState.currentRole,
+              soundEnabled: currentState.soundEnabled,
+            }));
+            previousPersistedStateRef.current = remoteState;
+          })
+          .catch((error: unknown) => {
+            console.warn("Supabase realtime refresh failed.", error);
+          });
+      }, 80);
+    }
+
+    const channel = client
+      .channel(`meeting-room:${roomId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "rooms", filter: `id=eq.${roomId}` },
+        scheduleRefresh,
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "speakers",
+          filter: `room_id=eq.${roomId}`,
+        },
+        scheduleRefresh,
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "audience_votes",
+          filter: `room_id=eq.${roomId}`,
+        },
+        scheduleRefresh,
+      )
+      .subscribe();
+
+    return () => {
+      if (refreshTimeoutId !== null) {
+        window.clearTimeout(refreshTimeoutId);
+      }
+
+      void client.removeChannel(channel);
+    };
+  }, [roomId, supabase]);
+
+  useEffect(() => {
+    if (!supabase || pendingPersistRef.current !== meetingState) return;
+    const client = supabase;
+
+    pendingPersistRef.current = null;
+    persistMeetingStateToSupabase(
+      client,
+      previousPersistedStateRef.current,
+      meetingState,
+    )
+      .then(() => {
+        previousPersistedStateRef.current = meetingState;
+      })
+      .catch((error: unknown) => {
+        console.warn("Supabase state save failed.", error);
+      });
+  }, [meetingState, supabase]);
+
+  const setSyncedMeetingState = useCallback<Dispatch<SetStateAction<MeetingState>>>(
+    (action) => {
+      setMeetingState((currentState) => {
+        const nextState =
+          typeof action === "function" ? action(currentState) : action;
+        const stateWithRoom = { ...nextState, roomId };
+        pendingPersistRef.current = stateWithRoom;
+
+        return stateWithRoom;
+      });
+    },
+    [roomId],
+  );
+
+  return [meetingState, setSyncedMeetingState];
 }

@@ -26,6 +26,14 @@ type HostControlsProps = {
   onResetSpeakers: () => void;
 };
 
+function createSpeakerId() {
+  if (typeof window !== "undefined" && window.crypto.randomUUID) {
+    return window.crypto.randomUUID();
+  }
+
+  return `00000000-0000-4000-8000-${Date.now().toString().slice(-12)}`;
+}
+
 export function HostControls({
   topic,
   leftLabel,
@@ -89,7 +97,7 @@ export function HostControls({
     }
 
     const newSpeaker: SpeakerMeterParticipant = {
-      id: `speaker-${Date.now()}`,
+      id: createSpeakerId(),
       name: `スピーカー${nextIndex}`,
       initial: String(nextIndex),
       value: 50,

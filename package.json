@@ -16,6 +16,7 @@
     "node": ">=20.9.0"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.105.3",
     "lucide-react": "^0.468.0",
     "next": "latest",
     "react": "latest",

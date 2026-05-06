@@ -22,7 +22,7 @@
 ## アプリ側の対応予定
 
 1. `@supabase/supabase-js` を追加する
-2. `.env.local` に Supabase URL と anon key を入れる
+2. `.env.local` に Supabase URL と publishable key を入れる
 3. `useSyncedMeetingState` の保存先を localStorage から Supabase に差し替える
 4. `rooms`, `speakers`, `audience_votes` の変更を Realtime 購読する
 5. レバー操作は値を間引いてDB更新する

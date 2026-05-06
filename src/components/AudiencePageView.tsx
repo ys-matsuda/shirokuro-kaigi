@@ -1,21 +1,31 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 
 import { useSyncedMeetingState } from "@/hooks/useSyncedMeetingState";
 import type { AudienceVote, MeetingState } from "@/types/meeting";
+import { getOrCreateClientId } from "@/utils/clientIdentity";
 
 import { AudienceVotePanel } from "./AudienceVotePanel";
 import { BroadcastStage } from "./BroadcastStage";
 
-const localAudienceId = "local-audience";
 const localAudienceName = "自分";
 
 export function AudiencePageView() {
   const [meetingState, setMeetingState] = useSyncedMeetingState();
+  const [localAudienceId, setLocalAudienceId] = useState("local-audience");
   const selectedAudienceValue =
     meetingState.audienceVotes.find((vote) => vote.id === localAudienceId)?.value ??
     null;
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setLocalAudienceId(getOrCreateClientId("audience"));
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, []);
 
   function updateMeetingState(updater: (currentState: MeetingState) => MeetingState) {
     setMeetingState(updater);
