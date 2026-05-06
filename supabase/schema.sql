@@ -75,6 +75,11 @@ alter table public.rooms enable row level security;
 alter table public.speakers enable row level security;
 alter table public.audience_votes enable row level security;
 
+grant usage on schema public to anon, authenticated;
+grant select, insert, update, delete on public.rooms to anon, authenticated;
+grant select, insert, update, delete on public.speakers to anon, authenticated;
+grant select, insert, update, delete on public.audience_votes to anon, authenticated;
+
 drop policy if exists rooms_public_select on public.rooms;
 create policy rooms_public_select
 on public.rooms for select

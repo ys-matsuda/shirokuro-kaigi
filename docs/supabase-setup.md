@@ -29,6 +29,16 @@ Supabase Dashboardで対象プロジェクトを開きます。
 
 初期データとして `main` 部屋とスピーカー5人も作成されます。
 
+もしアプリ側に `permission denied for table rooms` と表示された場合は、
+SQL Editorで以下を追加実行します。
+
+```sql
+grant usage on schema public to anon, authenticated;
+grant select, insert, update, delete on public.rooms to anon, authenticated;
+grant select, insert, update, delete on public.speakers to anon, authenticated;
+grant select, insert, update, delete on public.audience_votes to anon, authenticated;
+```
+
 ## 3. API情報を取得する
 
 Supabase Dashboardで以下を取得します。
