@@ -16,7 +16,7 @@ export const appConfig = {
   speakerPalette: ["#47b8ff", "#8f7cff", "#f3d26f", "#ff6b9a", "#7dd3fc"],
   realtimeStatusLabel: "ローカル試作中",
   access: {
-    hostKey: "host-demo",
+    hostKey: process.env.NEXT_PUBLIC_HOST_KEY ?? "host-demo",
     speakerKey: "speaker-demo",
     hostUnlockedByDefault: false,
     speakerUnlockedByDefault: true,

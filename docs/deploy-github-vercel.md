@@ -59,9 +59,12 @@ VercelのProject Settings > Environment Variables に追加します。
 ```env
 NEXT_PUBLIC_SUPABASE_URL=SupabaseのProject URL
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=SupabaseのPublishable key
+NEXT_PUBLIC_HOST_KEY=ホスト操作を解除するための任意のキー
 ```
 
 Environmentはまず `Production` / `Preview` / `Development` すべてに入れておくと楽です。
+
+`NEXT_PUBLIC_HOST_KEY` は簡易ロック用です。Vercelに追加・変更した後は、必ずRedeployして本番アプリへ反映してください。
 
 ## 5. Deployする
 
