@@ -18,7 +18,7 @@ export const appConfig = {
   access: {
     hostKey: "host-demo",
     speakerKey: "speaker-demo",
-    hostUnlockedByDefault: true,
+    hostUnlockedByDefault: false,
     speakerUnlockedByDefault: true,
     speakerControlEnabledByDefault: true,
   },

@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { appConfig } from "@/config/app";
 import { initialMeetingState } from "@/data/initialState";
+import { useHostAccess } from "@/hooks/useHostAccess";
 import { useSyncedMeetingState } from "@/hooks/useSyncedMeetingState";
 import { useTickSound } from "@/hooks/useTickSound";
 import type {
@@ -13,6 +14,7 @@ import type {
 } from "@/types/meeting";
 
 import { BroadcastStage } from "./BroadcastStage";
+import { HostAccessPanel } from "./HostAccessPanel";
 import { HostControls } from "./HostControls";
 import { SpeakerMultiLeverPanel } from "./SpeakerMultiLeverPanel";
 
@@ -27,6 +29,7 @@ export function SpeakerPageView() {
     activeSpeakerId,
     audienceVotes,
   } = meetingState;
+  const { isHostUnlocked, unlockHost, lockHost } = useHostAccess();
   const { playTickForValue, primeTickSound } = useTickSound({
     enabled: soundEnabled,
     step: appConfig.sound.tickStep,
@@ -166,29 +169,45 @@ export function SpeakerPageView() {
             onSoundEnabledChange={setSoundEnabled}
             onSpeakerValueChange={updateSpeakerValue}
             onReset={resetSpeakerMeter}
+            resetDisabled={!isHostUnlocked}
+            resetDisabledReason="ホストキーを入力するとリセットできます。"
             onPrimeSound={primeTickSound}
             onTick={playTickForValue}
           />
 
-          <HostControls
-            topic={topic}
-            leftLabel={leftLabel}
-            rightLabel={rightLabel}
-            speakers={speakers}
-            onUpdateTopic={(next) => {
-              updateMeetingState((currentState) => ({
-                ...currentState,
-                topic: next.topic,
-                leftLabel: next.leftLabel,
-                rightLabel: next.rightLabel,
-              }));
-            }}
-            onSpeakersChange={updateSpeakers}
-            onActiveSpeakerChange={setActiveSpeakerId}
-            onResetSpeaker={resetSpeakerMeter}
-            onResetAudience={resetAudienceVotes}
-            onResetSpeakers={resetSpeakerManagement}
-          />
+          <div className="grid gap-5">
+            <HostAccessPanel
+              isUnlocked={isHostUnlocked}
+              onUnlock={unlockHost}
+              onLock={lockHost}
+            />
+
+            <HostControls
+              topic={topic}
+              leftLabel={leftLabel}
+              rightLabel={rightLabel}
+              speakers={speakers}
+              disabled={!isHostUnlocked}
+              disabledReason={
+                isHostUnlocked
+                  ? undefined
+                  : "ホストキーを入力すると、お題変更・初期化・スピーカー管理が使えます。"
+              }
+              onUpdateTopic={(next) => {
+                updateMeetingState((currentState) => ({
+                  ...currentState,
+                  topic: next.topic,
+                  leftLabel: next.leftLabel,
+                  rightLabel: next.rightLabel,
+                }));
+              }}
+              onSpeakersChange={updateSpeakers}
+              onActiveSpeakerChange={setActiveSpeakerId}
+              onResetSpeaker={resetSpeakerMeter}
+              onResetAudience={resetAudienceVotes}
+              onResetSpeakers={resetSpeakerManagement}
+            />
+          </div>
         </div>
       </div>
     </main>

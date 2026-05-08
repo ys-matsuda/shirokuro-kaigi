@@ -21,6 +21,8 @@ type SpeakerMultiLeverPanelProps = {
   onSoundEnabledChange: (enabled: boolean) => void;
   onSpeakerValueChange: (speakerId: string, value: number) => void;
   onReset: () => void;
+  resetDisabled?: boolean;
+  resetDisabledReason?: string;
   onPrimeSound: () => void;
   onTick: (value: number) => void;
 };
@@ -193,6 +195,8 @@ export function SpeakerMultiLeverPanel({
   onSoundEnabledChange,
   onSpeakerValueChange,
   onReset,
+  resetDisabled = false,
+  resetDisabledReason,
   onPrimeSound,
   onTick,
 }: SpeakerMultiLeverPanelProps) {
@@ -212,8 +216,13 @@ export function SpeakerMultiLeverPanel({
           <button
             type="button"
             onClick={onReset}
-            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-4 text-sm font-bold text-slate-100 transition hover:border-white/20 hover:bg-white/[0.1]"
-            title="スピーカーメーターを初期値に戻す"
+            disabled={resetDisabled}
+            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-4 text-sm font-bold text-slate-100 transition hover:border-white/20 hover:bg-white/[0.1] disabled:cursor-not-allowed disabled:opacity-45"
+            title={
+              resetDisabled
+                ? resetDisabledReason
+                : "スピーカーメーターを初期値に戻す"
+            }
           >
             <RotateCcw aria-hidden="true" className="size-4" />
             リセット
