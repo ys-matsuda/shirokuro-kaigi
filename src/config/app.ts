@@ -37,6 +37,10 @@ export const appConfig = {
     minIntervalMs: 72,
     volume: 0.022,
   },
+  sync: {
+    fallbackRefreshIntervalMs: 7000,
+    localEditQuietMs: 1800,
+  },
   colors: {
     left: "#47b8ff",
     middle: "#f3d26f",
