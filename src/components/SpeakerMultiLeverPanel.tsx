@@ -17,6 +17,8 @@ type SpeakerMultiLeverPanelProps = {
   leftLabel: string;
   rightLabel: string;
   soundEnabled: boolean;
+  disabled?: boolean;
+  disabledReason?: string;
   onActiveSpeakerChange: (speakerId: string) => void;
   onSoundEnabledChange: (enabled: boolean) => void;
   onSpeakerValueChange: (speakerId: string, value: number) => void;
@@ -32,6 +34,7 @@ type SpeakerLeverRowProps = {
   isActive: boolean;
   leftLabel: string;
   rightLabel: string;
+  disabled: boolean;
   onActiveSpeakerChange: (speakerId: string) => void;
   onSpeakerValueChange: (speakerId: string, value: number) => void;
   onPrimeSound: () => void;
@@ -43,6 +46,7 @@ function SpeakerLeverRow({
   isActive,
   leftLabel,
   rightLabel,
+  disabled,
   onActiveSpeakerChange,
   onSpeakerValueChange,
   onPrimeSound,
@@ -84,9 +88,14 @@ function SpeakerLeverRow({
         <button
           type="button"
           onClick={() => onActiveSpeakerChange(speaker.id)}
+          disabled={disabled}
           className="grid size-11 place-items-center rounded-full border border-white/20 font-black text-slate-950 shadow-[0_12px_30px_rgba(0,0,0,0.34)] transition hover:brightness-110"
           style={{ backgroundColor: speaker.color }}
-          title={`${speaker.name}をステージの主表示にする`}
+          title={
+            disabled
+              ? "スピーカーキーを入力すると操作できます"
+              : `${speaker.name}をステージの主表示にする`
+          }
         >
           {speaker.initial}
         </button>
@@ -110,6 +119,7 @@ function SpeakerLeverRow({
         aria-valuenow={speaker.value}
         tabIndex={0}
         onPointerDown={(event) => {
+          if (disabled) return;
           onActiveSpeakerChange(speaker.id);
           onPrimeSound();
           setIsDragging(true);
@@ -117,7 +127,7 @@ function SpeakerLeverRow({
           updateFromClientX(event.clientX);
         }}
         onPointerMove={(event) => {
-          if (!isDragging) return;
+          if (disabled || !isDragging) return;
           updateFromClientX(event.clientX);
         }}
         onPointerUp={(event) => {
@@ -126,6 +136,7 @@ function SpeakerLeverRow({
         }}
         onPointerCancel={() => setIsDragging(false)}
         onKeyDown={(event) => {
+          if (disabled) return;
           const keyChanges: Record<string, number> = {
             ArrowLeft: -1,
             ArrowRight: 1,
@@ -149,7 +160,10 @@ function SpeakerLeverRow({
           onSpeakerValueChange(speaker.id, nextValue);
           onTick(nextValue);
         }}
-        className="group relative h-16 touch-none select-none outline-none"
+        className={cn(
+          "group relative h-16 touch-none select-none outline-none",
+          disabled && "cursor-not-allowed opacity-60",
+        )}
       >
         <div className="absolute inset-x-0 top-1/2 h-4 -translate-y-1/2 rounded-full border border-white/10 bg-slate-950/85 shadow-inner shadow-black">
           <div
@@ -191,6 +205,8 @@ export function SpeakerMultiLeverPanel({
   leftLabel,
   rightLabel,
   soundEnabled,
+  disabled = false,
+  disabledReason,
   onActiveSpeakerChange,
   onSoundEnabledChange,
   onSpeakerValueChange,
@@ -212,14 +228,19 @@ export function SpeakerMultiLeverPanel({
           <h2 className="mt-1 text-2xl font-black text-white">スピーカー操作</h2>
         </div>
         <div className="flex flex-wrap gap-2">
-          <TickSoundToggle enabled={soundEnabled} onChange={onSoundEnabledChange} />
+          <TickSoundToggle
+            enabled={soundEnabled}
+            onChange={disabled ? () => undefined : onSoundEnabledChange}
+          />
           <button
             type="button"
             onClick={onReset}
-            disabled={resetDisabled}
+            disabled={disabled || resetDisabled}
             className="inline-flex min-h-10 items-center justify-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-4 text-sm font-bold text-slate-100 transition hover:border-white/20 hover:bg-white/[0.1] disabled:cursor-not-allowed disabled:opacity-45"
             title={
-              resetDisabled
+              disabled
+                ? disabledReason
+                : resetDisabled
                 ? resetDisabledReason
                 : "スピーカーメーターを初期値に戻す"
             }
@@ -238,6 +259,7 @@ export function SpeakerMultiLeverPanel({
             isActive={speaker.id === activeSpeakerId}
             leftLabel={leftLabel}
             rightLabel={rightLabel}
+            disabled={disabled}
             onActiveSpeakerChange={onActiveSpeakerChange}
             onSpeakerValueChange={onSpeakerValueChange}
             onPrimeSound={onPrimeSound}

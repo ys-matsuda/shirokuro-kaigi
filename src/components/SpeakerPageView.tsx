@@ -4,7 +4,7 @@ import Link from "next/link";
 
 import { appConfig } from "@/config/app";
 import { initialMeetingState } from "@/data/initialState";
-import { useHostAccess } from "@/hooks/useHostAccess";
+import { useKeyAccess } from "@/hooks/useKeyAccess";
 import { useSyncedMeetingState } from "@/hooks/useSyncedMeetingState";
 import { useTickSound } from "@/hooks/useTickSound";
 import type {
@@ -14,8 +14,8 @@ import type {
 } from "@/types/meeting";
 
 import { BroadcastStage } from "./BroadcastStage";
-import { HostAccessPanel } from "./HostAccessPanel";
 import { HostControls } from "./HostControls";
+import { KeyAccessPanel } from "./KeyAccessPanel";
 import { SpeakerMultiLeverPanel } from "./SpeakerMultiLeverPanel";
 
 export function SpeakerPageView() {
@@ -29,7 +29,24 @@ export function SpeakerPageView() {
     activeSpeakerId,
     audienceVotes,
   } = meetingState;
-  const { isHostUnlocked, unlockHost, lockHost } = useHostAccess();
+  const {
+    isUnlocked: isSpeakerUnlocked,
+    unlock: unlockSpeaker,
+    lock: lockSpeaker,
+  } = useKeyAccess({
+    accessKey: appConfig.access.speakerKey,
+    defaultUnlocked: appConfig.access.speakerUnlockedByDefault,
+    storageKey: "consensus-meter:speaker-access:v1",
+  });
+  const {
+    isUnlocked: isHostUnlocked,
+    unlock: unlockHost,
+    lock: lockHost,
+  } = useKeyAccess({
+    accessKey: appConfig.access.hostKey,
+    defaultUnlocked: appConfig.access.hostUnlockedByDefault,
+    storageKey: "consensus-meter:host-access:v1",
+  });
   const { playTickForValue, primeTickSound } = useTickSound({
     enabled: soundEnabled,
     step: appConfig.sound.tickStep,
@@ -165,6 +182,8 @@ export function SpeakerPageView() {
             leftLabel={leftLabel}
             rightLabel={rightLabel}
             soundEnabled={soundEnabled}
+            disabled={!isSpeakerUnlocked}
+            disabledReason="スピーカーキーを入力すると操作できます。"
             onActiveSpeakerChange={setActiveSpeakerId}
             onSoundEnabledChange={setSoundEnabled}
             onSpeakerValueChange={updateSpeakerValue}
@@ -176,12 +195,6 @@ export function SpeakerPageView() {
           />
 
           <div className="grid gap-5">
-            <HostAccessPanel
-              isUnlocked={isHostUnlocked}
-              onUnlock={unlockHost}
-              onLock={lockHost}
-            />
-
             <HostControls
               topic={topic}
               leftLabel={leftLabel}
@@ -206,6 +219,35 @@ export function SpeakerPageView() {
               onResetSpeaker={resetSpeakerMeter}
               onResetAudience={resetAudienceVotes}
               onResetSpeakers={resetSpeakerManagement}
+            />
+
+            <KeyAccessPanel
+              eyebrow="SPEAKER ACCESS"
+              title="スピーカー権限"
+              label="スピーカーキー"
+              placeholder="スピーカーだけが入力"
+              unlockedMessage="スピーカーレバーを操作できます。"
+              lockedMessage="ロック中は、ステージ閲覧だけできます。"
+              errorMessage="スピーカーキーが違います。"
+              unlockButtonLabel="スピーカーとして解除"
+              tone="cyan"
+              isUnlocked={isSpeakerUnlocked}
+              onUnlock={unlockSpeaker}
+              onLock={lockSpeaker}
+            />
+
+            <KeyAccessPanel
+              eyebrow="HOST ACCESS"
+              title="ホスト権限"
+              label="ホストキー"
+              placeholder="ホストだけが入力"
+              unlockedMessage="お題変更・初期化・スピーカー管理が使えます。"
+              lockedMessage="ロック中は、お題変更・初期化・スピーカー管理だけ使えません。"
+              errorMessage="ホストキーが違います。"
+              unlockButtonLabel="ホストとして解除"
+              isUnlocked={isHostUnlocked}
+              onUnlock={unlockHost}
+              onLock={lockHost}
             />
           </div>
         </div>

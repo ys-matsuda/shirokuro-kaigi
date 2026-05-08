@@ -17,10 +17,10 @@ export const appConfig = {
   realtimeStatusLabel: "ローカル試作中",
   access: {
     hostKey: process.env.NEXT_PUBLIC_HOST_KEY ?? "host-demo",
-    speakerKey: "speaker-demo",
+    speakerKey: process.env.NEXT_PUBLIC_SPEAKER_KEY ?? "speaker-demo",
     hostUnlockedByDefault: false,
-    speakerUnlockedByDefault: true,
-    speakerControlEnabledByDefault: true,
+    speakerUnlockedByDefault: false,
+    speakerControlEnabledByDefault: false,
   },
   meter: {
     startAngle: 165,
