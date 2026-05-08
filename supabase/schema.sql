@@ -25,8 +25,7 @@ create table if not exists public.speakers (
   is_visible boolean not null default true,
   avatar_url text,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  unique (room_id, display_order)
+  updated_at timestamptz not null default now()
 );
 
 create table if not exists public.audience_votes (
@@ -84,6 +83,11 @@ drop policy if exists rooms_public_select on public.rooms;
 create policy rooms_public_select
 on public.rooms for select
 using (true);
+
+drop policy if exists rooms_public_insert on public.rooms;
+create policy rooms_public_insert
+on public.rooms for insert
+with check (true);
 
 drop policy if exists rooms_public_update on public.rooms;
 create policy rooms_public_update
