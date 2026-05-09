@@ -210,8 +210,242 @@ export function BroadcastStage({
   } as CSSProperties & Record<string, string>;
 
   return (
+    <>
+      {!isShareMode ? (
+        <section
+          className="mx-auto w-full md:hidden"
+          aria-label="モバイル用ステージ"
+        >
+          <div className="relative overflow-hidden rounded-lg border border-white/10 bg-slate-950 p-5 shadow-[0_22px_70px_rgba(0,0,0,0.38),inset_0_1px_0_rgba(255,255,255,0.06)]">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(71,184,255,0.28),transparent_36%),radial-gradient(circle_at_78%_28%,rgba(255,107,154,0.18),transparent_34%),linear-gradient(145deg,rgba(8,10,19,0.96),rgba(17,20,36,0.98))]" />
+            <div className="absolute inset-0 opacity-[0.15] [background-image:linear-gradient(rgba(255,255,255,0.11)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.08)_1px,transparent_1px)] [background-size:34px_34px]" />
+
+            <div className="relative z-10 grid gap-5">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-xs font-black tracking-[0.22em] text-cyan-100/55">
+                    現在のお題
+                  </p>
+                  <h2 className="mt-2 text-[clamp(2rem,9vw,3.15rem)] font-black leading-[1.05] text-white">
+                    {topic}
+                  </h2>
+                </div>
+                <a
+                  href="/stage"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="shrink-0 rounded-full border border-white/10 bg-white/[0.07] px-3 py-2 text-xs font-black text-slate-200"
+                >
+                  16:9
+                </a>
+              </div>
+
+              <div className="rounded-lg border border-white/10 bg-slate-950/42 p-3">
+                <svg
+                  viewBox={`0 30 ${viewBox.width} ${viewBox.height - 20}`}
+                  role="img"
+                  aria-label={`選択中スピーカーの現在値は${activeValue}`}
+                  className="h-72 w-full overflow-visible"
+                >
+                  <defs>
+                    <linearGradient
+                      id="mobileBroadcastBaseGradient"
+                      gradientUnits="userSpaceOnUse"
+                      x1="64"
+                      x2="456"
+                      y1="0"
+                      y2="0"
+                    >
+                      <stop offset="0%" stopColor={appConfig.colors.left} />
+                      <stop offset="50%" stopColor={appConfig.colors.middle} />
+                      <stop offset="100%" stopColor={appConfig.colors.right} />
+                    </linearGradient>
+                    <linearGradient
+                      id="mobileBroadcastProgressGradient"
+                      gradientUnits="userSpaceOnUse"
+                      x1={progressStartPoint.x}
+                      x2={activePoint.x}
+                      y1={progressStartPoint.y}
+                      y2={activePoint.y}
+                    >
+                      <stop offset="0%" stopColor={appConfig.colors.left} />
+                      {activeValue > 50 ? (
+                        <stop
+                          offset={middleProgressOffset}
+                          stopColor={appConfig.colors.middle}
+                        />
+                      ) : null}
+                      <stop offset="100%" stopColor={activeProgressColor} />
+                    </linearGradient>
+                    <radialGradient id="mobileSpeakerMarkerSheen" cx="34%" cy="26%" r="72%">
+                      <stop offset="0%" stopColor="#ffffff" stopOpacity="0.72" />
+                      <stop offset="48%" stopColor="#ffffff" stopOpacity="0.18" />
+                      <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
+                    </radialGradient>
+                    <filter
+                      id="mobileBroadcastMeterGlow"
+                      filterUnits="userSpaceOnUse"
+                      x="0"
+                      y="0"
+                      width={viewBox.width}
+                      height={viewBox.height}
+                    >
+                      <feGaussianBlur stdDeviation="9" result="blur" />
+                      <feMerge>
+                        <feMergeNode in="blur" />
+                        <feMergeNode in="SourceGraphic" />
+                      </feMerge>
+                    </filter>
+                  </defs>
+                  <path
+                    d={fullArcPath}
+                    fill="none"
+                    stroke="rgba(2,6,23,0.68)"
+                    strokeLinecap="round"
+                    strokeWidth="54"
+                  />
+                  <path
+                    d={fullArcPath}
+                    fill="none"
+                    stroke="url(#mobileBroadcastBaseGradient)"
+                    strokeLinecap="round"
+                    strokeOpacity="0.62"
+                    strokeWidth="38"
+                  />
+                  {activeValue > 0 ? (
+                    <path
+                      d={progressArcPath}
+                      fill="none"
+                      filter="url(#mobileBroadcastMeterGlow)"
+                      stroke="url(#mobileBroadcastProgressGradient)"
+                      strokeLinecap="round"
+                      strokeWidth="34"
+                    />
+                  ) : null}
+                  {activeValue > 0 ? (
+                    <path
+                      d={progressArcPath}
+                      fill="none"
+                      stroke="rgba(255,255,255,0.28)"
+                      strokeLinecap="round"
+                      strokeWidth="7"
+                    />
+                  ) : null}
+                  {[0, 50, 100].map((tick) => {
+                    const point = pointOnMeter(tick, geometry);
+
+                    return (
+                      <g key={tick}>
+                        <circle cx={point.x} cy={point.y} r="7" fill="rgba(255,255,255,0.92)" />
+                        <text
+                          x={point.x}
+                          y={point.y + (tick === 50 ? -24 : 31)}
+                          textAnchor="middle"
+                          className="fill-slate-50 text-[22px] font-black"
+                        >
+                          {tick}
+                        </text>
+                      </g>
+                    );
+                  })}
+                  {visibleSpeakers.map((speaker, index) => {
+                    const speakerGeometry = {
+                      ...geometry,
+                      radius:
+                        geometry.radius +
+                        (appConfig.meter.speakerRadiusOffsets[index] ?? index * 8),
+                    };
+                    const point = pointOnMeter(speaker.value, speakerGeometry);
+
+                    return (
+                      <SpeakerSvgMarker
+                        key={speaker.id}
+                        point={point}
+                        value={speaker.value}
+                        initial={speaker.initial}
+                        name={speaker.name}
+                        color={speaker.color}
+                        isActive={speaker.id === activeSpeakerId}
+                        animationMs={appConfig.meter.animationMs}
+                        onSelect={() => onActiveSpeakerChange(speaker.id)}
+                      />
+                    );
+                  })}
+                </svg>
+
+                <div className="mt-2 grid gap-2 text-base font-black">
+                  <div className="relative h-4 overflow-hidden rounded-full border border-white/10 bg-slate-950/60">
+                    <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(71,184,255,0.82),rgba(243,210,111,0.62)_50%,rgba(255,107,154,0.82))]" />
+                    <div
+                      className="absolute top-1/2 size-5 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/75 bg-white shadow-[0_0_20px_rgba(255,255,255,0.34)]"
+                      style={{ left: `${activeValue}%` }}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 items-center gap-3">
+                    <span className="truncate text-cyan-50">{leftLabel}</span>
+                    <span className="truncate text-right text-rose-50">{rightLabel}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-white/10 bg-white/[0.055] p-4">
+                <div className="grid grid-cols-[1fr_auto] gap-3">
+                  <div className="min-w-0">
+                    <p className="text-xs font-black tracking-[0.18em] text-slate-400">
+                      ROOM MOOD
+                    </p>
+                    <p className="mt-1 truncate text-base font-black text-cyan-100">
+                      {formatAudienceMood(audienceVotes, leftLabel, rightLabel)}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-3xl font-black leading-none text-white">
+                      {audienceVotes.length}
+                    </p>
+                    <p className="mt-1 text-xs font-bold text-slate-400">
+                      AVG {formatSoftAverage(audienceVotes)}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-4 grid h-24 grid-cols-11 items-end gap-1.5">
+                  {buckets.map((bucket, index) => {
+                    const count = counts[index];
+                    const height = count ? `${18 + (count / maxCount) * 82}%` : "9%";
+
+                    return (
+                      <div key={bucket} className="flex h-full min-w-0 items-end justify-center">
+                        <div
+                          className={cn(
+                            "w-full max-w-5 rounded-full border",
+                            count
+                              ? "border-white/20 bg-[linear-gradient(180deg,#ff6b9a,#f3d26f_52%,#47b8ff)] shadow-[0_0_16px_rgba(255,255,255,0.08)]"
+                              : "border-white/10 bg-white/[0.04]",
+                          )}
+                          style={{ height }}
+                          title={`${bucket}: ${count}`}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="mt-2 grid grid-cols-3 text-[10px] font-black text-slate-400">
+                  <span className="truncate text-cyan-100">{leftLabel}</span>
+                  <span className="text-center text-amber-100">50</span>
+                  <span className="truncate text-right text-rose-100">{rightLabel}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
     <section
-      className="mx-auto [container-type:inline-size]"
+      className={cn(
+        "mx-auto [container-type:inline-size]",
+        !isShareMode && "hidden md:block",
+      )}
       style={stageStyle}
       aria-label="配信用16:9ステージ"
     >
@@ -567,5 +801,6 @@ export function BroadcastStage({
         </div>
       </div>
     </section>
+    </>
   );
 }
