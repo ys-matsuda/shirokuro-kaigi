@@ -1,10 +1,24 @@
 "use client";
 
 import { BroadcastStage } from "@/components/BroadcastStage";
+import { appConfig } from "@/config/app";
 import { useSyncedMeetingState } from "@/hooks/useSyncedMeetingState";
+import { isRoomExpired } from "@/utils/roomExpiry";
 
-export function StageShareView() {
-  const [meetingState] = useSyncedMeetingState();
+import { RoomExpiredView } from "./RoomExpiredView";
+
+type StageShareViewProps = {
+  roomId?: string;
+};
+
+export function StageShareView({
+  roomId = appConfig.defaultRoomId,
+}: StageShareViewProps) {
+  const [meetingState] = useSyncedMeetingState(roomId);
+
+  if (isRoomExpired(meetingState.expiresAt)) {
+    return <RoomExpiredView />;
+  }
 
   return (
     <main className="relative grid h-screen place-items-center overflow-hidden bg-slate-950 p-2">

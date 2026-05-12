@@ -4,6 +4,7 @@ export type MeetingRoom = {
   id: string;
   name: string;
   description?: string;
+  expiresAt?: string | null;
 };
 
 export type AudienceVote = {
@@ -23,6 +24,7 @@ export type SpeakerMeterParticipant = {
 
 export type MeetingState = {
   roomId: string;
+  expiresAt?: string | null;
   topic: string;
   leftLabel: string;
   rightLabel: string;

@@ -11,7 +11,10 @@ import {
 } from "react";
 
 import { appConfig } from "@/config/app";
-import { initialMeetingState } from "@/data/initialState";
+import {
+  createInitialMeetingStateForRoom,
+  initialMeetingState,
+} from "@/data/initialState";
 import { getSupabaseBrowserClient } from "@/lib/supabaseClient";
 import {
   fetchMeetingStateFromSupabase,
@@ -62,43 +65,50 @@ function normalizeMeetingState(
   roomId: string = appConfig.defaultRoomId,
 ): MeetingState {
   const source = isRecord(value) ? value : {};
+  const defaultState = createInitialMeetingStateForRoom(roomId, {
+    includeSampleAudienceVotes: roomId === appConfig.defaultRoomId,
+  });
   const speakers = Array.isArray(source.speakers)
     ? source.speakers.filter(isSpeaker).slice(0, appConfig.maxSpeakers)
-    : initialMeetingState.speakers;
+    : defaultState.speakers;
   const activeSpeakerId =
     typeof source.activeSpeakerId === "string" &&
     speakers.some((speaker) => speaker.id === source.activeSpeakerId)
       ? source.activeSpeakerId
-      : speakers[0]?.id ?? initialMeetingState.activeSpeakerId;
+      : speakers[0]?.id ?? defaultState.activeSpeakerId;
 
   return {
     roomId: typeof source.roomId === "string" ? source.roomId : roomId,
+    expiresAt:
+      typeof source.expiresAt === "string" || source.expiresAt === null
+        ? source.expiresAt
+        : undefined,
     topic:
       typeof source.topic === "string"
         ? source.topic
-        : initialMeetingState.topic,
+        : defaultState.topic,
     leftLabel:
       typeof source.leftLabel === "string"
         ? source.leftLabel
-        : initialMeetingState.leftLabel,
+        : defaultState.leftLabel,
     rightLabel:
       typeof source.rightLabel === "string"
         ? source.rightLabel
-        : initialMeetingState.rightLabel,
+        : defaultState.rightLabel,
     speakers,
     activeSpeakerId,
     audienceVotes: Array.isArray(source.audienceVotes)
       ? source.audienceVotes.filter(isAudienceVote)
-      : initialMeetingState.audienceVotes,
+      : defaultState.audienceVotes,
     currentRole:
       typeof source.currentRole === "string" &&
       roles.includes(source.currentRole as Role)
         ? (source.currentRole as Role)
-        : initialMeetingState.currentRole,
+        : defaultState.currentRole,
     soundEnabled:
       typeof source.soundEnabled === "boolean"
         ? source.soundEnabled
-        : initialMeetingState.soundEnabled,
+        : defaultState.soundEnabled,
   };
 }
 
@@ -113,9 +123,13 @@ function readStoredMeetingState(roomId: string) {
 
     return rawValue
       ? normalizeMeetingState(JSON.parse(rawValue), roomId)
-      : { ...initialMeetingState, roomId };
+      : createInitialMeetingStateForRoom(roomId, {
+          includeSampleAudienceVotes: roomId === appConfig.defaultRoomId,
+        });
   } catch {
-    return { ...initialMeetingState, roomId };
+    return createInitialMeetingStateForRoom(roomId, {
+      includeSampleAudienceVotes: roomId === appConfig.defaultRoomId,
+    });
   }
 }
 
@@ -144,6 +158,7 @@ function mergeRemoteMeetingState(
 function sharedMeetingStateSnapshot(state: MeetingState) {
   return JSON.stringify({
     roomId: state.roomId,
+    expiresAt: state.expiresAt,
     topic: state.topic,
     leftLabel: state.leftLabel,
     rightLabel: state.rightLabel,
@@ -226,7 +241,11 @@ export function useSyncedMeetingState(
       try {
         setMeetingState(normalizeMeetingState(JSON.parse(event.newValue), roomId));
       } catch {
-        setMeetingState({ ...initialMeetingState, roomId });
+        setMeetingState(
+          createInitialMeetingStateForRoom(roomId, {
+            includeSampleAudienceVotes: roomId === appConfig.defaultRoomId,
+          }),
+        );
       }
     }
 

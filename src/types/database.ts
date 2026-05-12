@@ -5,6 +5,7 @@ export type RoomRow = {
   left_label: string;
   right_label: string;
   active_speaker_id: string | null;
+  expires_at?: string | null;
   created_at: string;
   updated_at: string;
 };

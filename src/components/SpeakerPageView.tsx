@@ -3,7 +3,10 @@
 import Link from "next/link";
 
 import { appConfig } from "@/config/app";
-import { initialMeetingState } from "@/data/initialState";
+import {
+  createInitialMeetingStateForRoom,
+  initialMeetingState,
+} from "@/data/initialState";
 import { useKeyAccess } from "@/hooks/useKeyAccess";
 import { useSyncedMeetingState } from "@/hooks/useSyncedMeetingState";
 import { useTickSound } from "@/hooks/useTickSound";
@@ -12,14 +15,28 @@ import type {
   MeetingState,
   SpeakerMeterParticipant,
 } from "@/types/meeting";
+import { isRoomExpired } from "@/utils/roomExpiry";
 
 import { BroadcastStage } from "./BroadcastStage";
 import { HostControls } from "./HostControls";
 import { KeyAccessPanel } from "./KeyAccessPanel";
+import { RoomExpiredView } from "./RoomExpiredView";
 import { SpeakerMultiLeverPanel } from "./SpeakerMultiLeverPanel";
 
-export function SpeakerPageView() {
-  const [meetingState, setMeetingState] = useSyncedMeetingState();
+type SpeakerPageViewProps = {
+  roomId?: string;
+  entranceHref?: string;
+  audienceHref?: string;
+  stageHref?: string;
+};
+
+export function SpeakerPageView({
+  roomId = appConfig.defaultRoomId,
+  entranceHref = "/",
+  audienceHref = "/audience",
+  stageHref = "/stage",
+}: SpeakerPageViewProps) {
+  const [meetingState, setMeetingState] = useSyncedMeetingState(roomId);
   const {
     topic,
     leftLabel,
@@ -53,6 +70,7 @@ export function SpeakerPageView() {
     volume: appConfig.sound.volume,
     minIntervalMs: appConfig.sound.minIntervalMs,
   });
+  const isExpired = isRoomExpired(meetingState.expiresAt);
 
   function updateMeetingState(updater: (currentState: MeetingState) => MeetingState) {
     setMeetingState(updater);
@@ -107,7 +125,8 @@ export function SpeakerPageView() {
   function resetSpeakerMeter() {
     updateMeetingState((currentState) => ({
       ...currentState,
-      activeSpeakerId: initialMeetingState.activeSpeakerId,
+      activeSpeakerId:
+        currentState.speakers[0]?.id ?? initialMeetingState.activeSpeakerId,
       speakers: currentState.speakers.map((speaker) => ({
         ...speaker,
         value:
@@ -120,9 +139,20 @@ export function SpeakerPageView() {
   function resetSpeakerManagement() {
     updateMeetingState((currentState) => ({
       ...currentState,
-      activeSpeakerId: initialMeetingState.activeSpeakerId,
-      speakers: initialMeetingState.speakers.map((speaker) => ({ ...speaker })),
+      ...createInitialMeetingStateForRoom(currentState.roomId, {
+        expiresAt: currentState.expiresAt,
+        includeSampleAudienceVotes: false,
+      }),
+      topic: currentState.topic,
+      leftLabel: currentState.leftLabel,
+      rightLabel: currentState.rightLabel,
+      audienceVotes: currentState.audienceVotes,
+      soundEnabled: currentState.soundEnabled,
     }));
+  }
+
+  if (isExpired) {
+    return <RoomExpiredView />;
   }
 
   return (
@@ -143,19 +173,19 @@ export function SpeakerPageView() {
           </div>
           <nav className="flex flex-wrap gap-2 text-sm font-black">
             <Link
-              href="/"
+              href={entranceHref}
               className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-slate-300 transition hover:border-white/20 hover:bg-white/[0.08]"
             >
               エントランス
             </Link>
             <Link
-              href="/audience"
+              href={audienceHref}
               className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-slate-300 transition hover:border-white/20 hover:bg-white/[0.08]"
             >
               視聴者
             </Link>
             <Link
-              href="/stage"
+              href={stageHref}
               target="_blank"
               rel="noreferrer"
               className="rounded-full border border-white/10 bg-white/[0.07] px-4 py-2 text-slate-100 transition hover:border-white/20 hover:bg-white/[0.1]"

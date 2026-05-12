@@ -3,21 +3,37 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
+import { appConfig } from "@/config/app";
 import { useSyncedMeetingState } from "@/hooks/useSyncedMeetingState";
 import type { AudienceVote, MeetingState } from "@/types/meeting";
 import { getOrCreateClientId } from "@/utils/clientIdentity";
+import { isRoomExpired } from "@/utils/roomExpiry";
 
 import { AudienceVotePanel } from "./AudienceVotePanel";
 import { BroadcastStage } from "./BroadcastStage";
+import { RoomExpiredView } from "./RoomExpiredView";
 
 const localAudienceName = "自分";
 
-export function AudiencePageView() {
-  const [meetingState, setMeetingState] = useSyncedMeetingState();
+type AudiencePageViewProps = {
+  roomId?: string;
+  entranceHref?: string;
+  speakerHref?: string;
+  stageHref?: string;
+};
+
+export function AudiencePageView({
+  roomId = appConfig.defaultRoomId,
+  entranceHref = "/",
+  speakerHref = "/speaker",
+  stageHref = "/stage",
+}: AudiencePageViewProps) {
+  const [meetingState, setMeetingState] = useSyncedMeetingState(roomId);
   const [localAudienceId, setLocalAudienceId] = useState("local-audience");
   const selectedAudienceValue =
     meetingState.audienceVotes.find((vote) => vote.id === localAudienceId)?.value ??
     null;
+  const isExpired = isRoomExpired(meetingState.expiresAt);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -54,6 +70,10 @@ export function AudiencePageView() {
     });
   }
 
+  if (isExpired) {
+    return <RoomExpiredView />;
+  }
+
   return (
     <main className="relative min-h-screen overflow-hidden bg-slate-950">
       <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_18%_12%,rgba(71,184,255,0.16),transparent_30%),radial-gradient(circle_at_82%_18%,rgba(255,107,154,0.13),transparent_30%),linear-gradient(135deg,#070914_0%,#0d1120_44%,#160f1f_100%)]" />
@@ -72,19 +92,19 @@ export function AudiencePageView() {
           </div>
           <nav className="flex flex-wrap gap-2 text-sm font-black">
             <Link
-              href="/"
+              href={entranceHref}
               className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-slate-300 transition hover:border-white/20 hover:bg-white/[0.08]"
             >
               エントランス
             </Link>
             <Link
-              href="/speaker"
+              href={speakerHref}
               className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-slate-300 transition hover:border-white/20 hover:bg-white/[0.08]"
             >
               スピーカー
             </Link>
             <Link
-              href="/stage"
+              href={stageHref}
               target="_blank"
               rel="noreferrer"
               className="rounded-full border border-white/10 bg-white/[0.07] px-4 py-2 text-slate-100 transition hover:border-white/20 hover:bg-white/[0.1]"

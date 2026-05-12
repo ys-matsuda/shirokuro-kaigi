@@ -79,10 +79,26 @@ https://shirokuro-kaigi.vercel.app
 
 ## 6. 公開後テスト
 
+- `/` でホストキーを解除して会議URLを発行する
+- 発行された `/room/...` のエントランスを開く
+- `/room/.../speaker` と `/room/.../audience` が同じ状態で同期するか確認する
 - `/speaker` をPCで開く
 - `/stage` を別タブで開く
 - `/audience` をスマホで開く
 - レバー、投票、お題変更が同期するか確認する
+
+## 7. 既存Supabaseへの追加SQL
+
+ルームURLの有効期限を保存するため、既存のSupabaseプロジェクトでは一度だけ実行します。
+
+```sql
+alter table public.rooms
+  add column if not exists expires_at timestamptz;
+
+create index if not exists rooms_expires_at_idx
+  on public.rooms(expires_at)
+  where expires_at is not null;
+```
 
 ## 注意
 

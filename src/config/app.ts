@@ -3,6 +3,7 @@ export const appConfig = {
   roomName: "",
   communityName: "",
   defaultRoomId: "main",
+  roomLifetimeHours: 48,
   rooms: [
     {
       id: "main",

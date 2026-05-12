@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { appConfig } from "@/config/app";
-import { initialMeetingState } from "@/data/initialState";
+import { createInitialMeetingStateForRoom } from "@/data/initialState";
 import type {
   AudienceVoteRow,
   MeetingStateRows,
@@ -14,8 +14,7 @@ import { meetingStateFromRows } from "@/utils/meetingStateDatabase";
 function roomNameFor(roomId: string) {
   return (
     appConfig.rooms.find((room) => room.id === roomId)?.name ??
-    appConfig.rooms[0]?.name ??
-    "メイン会場"
+    appConfig.name
   );
 }
 
@@ -66,9 +65,9 @@ export async function fetchMeetingStateFromSupabase(
   if (votesResult.error) throw votesResult.error;
 
   if (!roomResult.data) {
-    const fallbackState = { ...initialMeetingState, roomId };
-    await persistMeetingStateToSupabase(supabase, null, fallbackState);
-    return fallbackState;
+    return createInitialMeetingStateForRoom(roomId, {
+      includeSampleAudienceVotes: roomId === appConfig.defaultRoomId,
+    });
   }
 
   const rows: MeetingStateRows = {

@@ -10,9 +10,13 @@ create table if not exists public.rooms (
   left_label text not null,
   right_label text not null,
   active_speaker_id uuid,
+  expires_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.rooms
+  add column if not exists expires_at timestamptz;
 
 create table if not exists public.speakers (
   id uuid primary key default gen_random_uuid(),
@@ -44,6 +48,10 @@ create index if not exists speakers_room_order_idx
 
 create index if not exists audience_votes_room_value_idx
   on public.audience_votes(room_id, value);
+
+create index if not exists rooms_expires_at_idx
+  on public.rooms(expires_at)
+  where expires_at is not null;
 
 create or replace function public.touch_updated_at()
 returns trigger

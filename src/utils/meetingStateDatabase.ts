@@ -20,6 +20,7 @@ export function meetingStateFromRows({
 
   return {
     roomId: room.id,
+    expiresAt: room.expires_at,
     topic: room.topic,
     leftLabel: room.left_label,
     rightLabel: room.right_label,

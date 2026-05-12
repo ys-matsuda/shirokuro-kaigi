@@ -1,5 +1,5 @@
-import { EntryPageView } from "@/components/EntryPageView";
+import { RoomCreatePageView } from "@/components/RoomCreatePageView";
 
 export default function Home() {
-  return <EntryPageView />;
+  return <RoomCreatePageView />;
 }

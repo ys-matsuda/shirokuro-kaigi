@@ -6,24 +6,41 @@ import { ArrowRight, Mic2, UsersRound } from "lucide-react";
 import { appConfig } from "@/config/app";
 import { useSyncedMeetingState } from "@/hooks/useSyncedMeetingState";
 import { formatAudienceMood } from "@/utils/formatOpinionLabel";
+import { isRoomExpired } from "@/utils/roomExpiry";
 
-const entryLinks = [
-  {
-    href: "/speaker",
-    title: "スピーカー参加",
-    icon: Mic2,
-    accent: "from-cyan-200/18 via-violet-200/12 to-white/[0.04]",
-  },
-  {
-    href: "/audience",
-    title: "視聴者参加",
-    icon: UsersRound,
-    accent: "from-rose-200/18 via-amber-200/12 to-white/[0.04]",
-  },
-];
+import { RoomExpiredView } from "./RoomExpiredView";
 
-export function EntryPageView() {
-  const [meetingState] = useSyncedMeetingState();
+type EntryPageViewProps = {
+  roomId?: string;
+  speakerHref?: string;
+  audienceHref?: string;
+};
+
+export function EntryPageView({
+  roomId = appConfig.defaultRoomId,
+  speakerHref = "/speaker",
+  audienceHref = "/audience",
+}: EntryPageViewProps) {
+  const [meetingState] = useSyncedMeetingState(roomId);
+  const isExpired = isRoomExpired(meetingState.expiresAt);
+  const entryLinks = [
+    {
+      href: speakerHref,
+      title: "スピーカー参加",
+      icon: Mic2,
+      accent: "from-cyan-200/18 via-violet-200/12 to-white/[0.04]",
+    },
+    {
+      href: audienceHref,
+      title: "視聴者参加",
+      icon: UsersRound,
+      accent: "from-rose-200/18 via-amber-200/12 to-white/[0.04]",
+    },
+  ];
+
+  if (isExpired) {
+    return <RoomExpiredView />;
+  }
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-slate-950 text-white">
@@ -34,14 +51,10 @@ export function EntryPageView() {
       <div className="relative z-10 mx-auto grid min-h-screen w-full max-w-5xl content-center gap-8 px-4 py-8 sm:px-6 lg:px-8">
         <header>
           <div>
-            {appConfig.roomName ? (
-              <p className="text-sm font-black tracking-[0.24em] text-cyan-100/65">
-                {appConfig.roomName}
-              </p>
-            ) : null}
-            <h1
-              className={`${appConfig.roomName ? "mt-3 " : ""}text-4xl font-black leading-tight text-white sm:text-6xl`}
-            >
+            <p className="text-sm font-black tracking-[0.24em] text-cyan-100/65">
+              ROOM ENTRANCE
+            </p>
+            <h1 className="mt-3 text-4xl font-black leading-tight text-white sm:text-6xl">
               {appConfig.name}
             </h1>
           </div>

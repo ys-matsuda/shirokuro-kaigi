@@ -18,14 +18,42 @@ npm.cmd run dev
 
 起動後、ブラウザで `http://localhost:3000` を開きます。
 
+## 主なURL
+
+- `/`: 会議作成ページ
+- `/room/[roomId]`: 発行された会議URLのエントランス
+- `/room/[roomId]/speaker`: その会議のスピーカー操作
+- `/room/[roomId]/audience`: その会議の視聴者参加
+- `/room/[roomId]/stage`: その会議の16:9画面共有
+- `/speaker` `/audience` `/stage`: 従来の固定ルーム用ページ
+
 ## 構成
 
 - `src/config/app.ts`: アプリ名、ルーム名、メーター角度、音量、色などの調整値
 - `src/data/initialState.ts`: 初期お題、最大5人のスピーカー、サンプル分布
 - `src/components`: 画面コンポーネント
+- `src/components/RoomCreatePageView.tsx`: 会議URLの発行ページ
+- `src/components/EntryPageView.tsx`: ルームごとのエントランス
 - `src/hooks/useTickSound.ts`: Web Audio APIのカチカチ音
+- `src/hooks/useSyncedMeetingState.ts`: ルームIDごとの同期状態
+- `src/services/supabaseRooms.ts`: Supabaseへの会議作成処理
 - `src/utils/meterMath.ts`: アークメーターの座標計算
 - `src/utils/formatOpinionLabel.ts`: 表示ラベルや空気感の整形
+
+## ルーム作成
+
+トップページでホストキーを解除すると、48時間有効な会議URLを発行できます。
+
+既存のSupabaseプロジェクトでは、会議の有効期限を保存するために一度だけ以下をSQL Editorで実行してください。
+
+```sql
+alter table public.rooms
+  add column if not exists expires_at timestamptz;
+
+create index if not exists rooms_expires_at_idx
+  on public.rooms(expires_at)
+  where expires_at is not null;
+```
 
 ## 配信用画面
 
