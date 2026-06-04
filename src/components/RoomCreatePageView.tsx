@@ -1,16 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Check, Copy, Plus } from "lucide-react";
 
 import { appConfig } from "@/config/app";
 import { useKeyAccess } from "@/hooks/useKeyAccess";
-import { getSupabaseBrowserClient } from "@/lib/supabaseClient";
-import {
-  createMeetingRoomInSupabase,
-  type CreatedMeetingRoom,
-} from "@/services/supabaseRooms";
+import type { CreatedMeetingRoom } from "@/services/supabaseRooms";
 
 import { KeyAccessPanel } from "./KeyAccessPanel";
 
@@ -53,8 +49,46 @@ function formatRoomCreationError(error: unknown) {
   return lines.length > 1 ? lines.join("\n") : fallbackMessage;
 }
 
+function isCreatedMeetingRoom(value: unknown): value is CreatedMeetingRoom {
+  if (typeof value !== "object" || value === null) return false;
+
+  const source = value as Record<string, unknown>;
+
+  return (
+    typeof source.roomId === "string" &&
+    typeof source.entrancePath === "string" &&
+    typeof source.expiresAt === "string"
+  );
+}
+
+async function createMeetingRoomViaApi() {
+  const response = await fetch("/api/rooms", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-host-key": appConfig.access.hostKey,
+    },
+    body: "{}",
+  });
+
+  const payload: unknown = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    if (typeof payload === "object" && payload !== null && "error" in payload) {
+      throw (payload as { error: unknown }).error;
+    }
+
+    throw new Error(`会議作成APIが失敗しました。status: ${response.status}`);
+  }
+
+  if (!isCreatedMeetingRoom(payload)) {
+    throw new Error("会議作成APIの応答形式が不正です。");
+  }
+
+  return payload;
+}
+
 export function RoomCreatePageView() {
-  const supabase = useMemo(() => getSupabaseBrowserClient(), []);
   const [createdRoom, setCreatedRoom] = useState<CreatedMeetingRoom | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [copyState, setCopyState] = useState<"idle" | "copied">("idle");
@@ -75,14 +109,14 @@ export function RoomCreatePageView() {
       : `${window.location.origin}${createdRoom.entrancePath}`;
 
   async function handleCreateRoom() {
-    if (!supabase || !isHostUnlocked || isCreating) return;
+    if (!isHostUnlocked || isCreating) return;
 
     setIsCreating(true);
     setErrorMessage("");
     setCopyState("idle");
 
     try {
-      const nextRoom = await createMeetingRoomInSupabase(supabase);
+      const nextRoom = await createMeetingRoomViaApi();
       setCreatedRoom(nextRoom);
     } catch (error) {
       console.error("Room creation failed.", error);
@@ -149,7 +183,7 @@ export function RoomCreatePageView() {
 
             <button
               type="button"
-              disabled={!supabase || !isHostUnlocked || isCreating}
+              disabled={!isHostUnlocked || isCreating}
               onClick={handleCreateRoom}
               className="mt-6 grid min-h-14 w-full grid-cols-[auto_1fr_auto] items-center gap-3 rounded-lg border border-cyan-100/20 bg-cyan-100 px-5 text-left text-lg font-black text-slate-950 shadow-[0_20px_70px_rgba(71,184,255,0.2)] transition hover:-translate-y-0.5 hover:bg-white disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/[0.08] disabled:text-slate-500 disabled:shadow-none disabled:hover:translate-y-0"
             >
@@ -164,11 +198,6 @@ export function RoomCreatePageView() {
               <ArrowRight aria-hidden="true" className="size-5" />
             </button>
 
-            {!supabase ? (
-              <p className="mt-3 text-sm font-bold text-rose-100">
-                Supabaseの環境変数が未設定のため、会議を作成できません。
-              </p>
-            ) : null}
             {errorMessage ? (
               <p className="mt-3 whitespace-pre-wrap rounded-lg border border-rose-200/20 bg-rose-500/10 p-3 text-sm font-bold leading-relaxed text-rose-100">
                 {errorMessage}
