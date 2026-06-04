@@ -23,6 +23,36 @@ function formatExpiresAt(expiresAt: string) {
   }).format(new Date(expiresAt));
 }
 
+function formatRoomCreationError(error: unknown) {
+  const fallbackMessage =
+    "会議の作成に失敗しました。少し時間を置いてもう一度お試しください。";
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (typeof error !== "object" || error === null) {
+    return fallbackMessage;
+  }
+
+  const source = error as Record<string, unknown>;
+  const lines = ["会議の作成に失敗しました。Supabaseエラー詳細:"];
+
+  for (const key of ["code", "message", "details", "hint", "status", "statusText"]) {
+    const value = source[key];
+
+    if (typeof value === "string" && value.trim()) {
+      lines.push(`${key}: ${value}`);
+    }
+
+    if (typeof value === "number") {
+      lines.push(`${key}: ${value}`);
+    }
+  }
+
+  return lines.length > 1 ? lines.join("\n") : fallbackMessage;
+}
+
 export function RoomCreatePageView() {
   const supabase = useMemo(() => getSupabaseBrowserClient(), []);
   const [createdRoom, setCreatedRoom] = useState<CreatedMeetingRoom | null>(null);
@@ -56,11 +86,7 @@ export function RoomCreatePageView() {
       setCreatedRoom(nextRoom);
     } catch (error) {
       console.error("Room creation failed.", error);
-      setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : "会議の作成に失敗しました。少し時間を置いてもう一度お試しください。",
-      );
+      setErrorMessage(formatRoomCreationError(error));
     } finally {
       setIsCreating(false);
     }
@@ -144,7 +170,7 @@ export function RoomCreatePageView() {
               </p>
             ) : null}
             {errorMessage ? (
-              <p className="mt-3 text-sm font-bold text-rose-100">
+              <p className="mt-3 whitespace-pre-wrap rounded-lg border border-rose-200/20 bg-rose-500/10 p-3 text-sm font-bold leading-relaxed text-rose-100">
                 {errorMessage}
               </p>
             ) : null}
